@@ -1,0 +1,3571 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>masar | مسار</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Poppins:wght@500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Icons&display=swap">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
+    
+    <!-- Plyr CSS & JS Integration -->
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#0F172A',
+                            primary: '#4F46E5',
+                            accent: '#06B6D4',
+                            success: '#10B981',
+                            bg: '#F8FAFC'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Cairo', 'sans-serif'],
+                        en: ['Poppins', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .page-view { display: none; opacity: 0; transition: opacity 0.3s ease-in-out; }
+        .page-view.active { display: block; opacity: 1; }
+        .logo-en { font-family: 'Poppins', sans-serif; font-weight: 800; letter-spacing: -0.5px; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        .dark ::-webkit-scrollbar-thumb { background: #334155; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .interactive-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .interactive-card:hover { transform: translateY(-6px); box-shadow: 0 12px 24px -10px rgba(79, 70, 229, 0.15); }
+        .nav-button {
+            border-radius: 0.75rem;
+        }
+        .nav-button.active, .mobile-nav-button.active {
+            background: #4F46E5;
+            color: #fff !important;
+            border-radius: 0.75rem;
+            box-shadow: 0 8px 18px -6px rgba(79, 70, 229, 0.45);
+        }
+        .nav-button.active:hover, .mobile-nav-button.active:hover {
+            background: #4338ca;
+        }
+        .nav-button.active .material-icons, .mobile-nav-button.active .material-icons {
+            color: #fff !important;
+        }
+        .mobile-nav-button.active span {
+            color: #fff !important;
+        }
+        .pricing-plan-card {
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .pricing-plan-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 40px -24px rgba(79, 70, 229, 0.35);
+        }
+        @media (max-width: 640px) {
+            #teacher-plans-modal .rounded-3xl {
+                border-radius: 1.25rem;
+            }
+            #teacher-plans-modal .px-6,
+            #teacher-plans-modal .px-4 {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+        }
+
+        .splash-screen {
+            transition: opacity 0.7s ease, visibility 0.7s ease;
+        }
+        .splash-screen.is-hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        html.dark .splash-screen {
+            background: linear-gradient(135deg, #020617 0%, #111827 45%, #1e293b 100%);
+            color: #f8fafc;
+        }
+        html:not(.dark) .splash-screen {
+            background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 55%, #ffffff 100%);
+            color: #0f172a;
+        }
+        .splash-bar {
+            height: 3px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: rgba(148, 163, 184, 0.25);
+        }
+        .splash-bar::after {
+            content: '';
+            display: block;
+            width: 40%;
+            height: 100%;
+            background: linear-gradient(90deg, #4F46E5, #06B6D4);
+            animation: splashLoad 1.2s ease-in-out infinite;
+            border-radius: inherit;
+        }
+        @keyframes splashLoad {
+            0% { transform: translateX(-120%); }
+            100% { transform: translateX(260%); }
+        }
+    </style>
+    <script>
+        (function () {
+            try {
+                const savedTheme = localStorage.getItem('masar-theme');
+                const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const isDark = savedTheme ? savedTheme === 'dark' : prefersDark;
+                document.documentElement.classList.toggle('dark', isDark);
+            } catch (e) {}
+        })();
+    </script>
+</head>
+<body class="bg-brand-bg dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans flex flex-col min-h-screen transition-colors duration-300">
+    <div id="app-splash" class="splash-screen fixed inset-0 z-[300] flex items-center justify-center">
+        <div class="text-center px-6 w-full max-w-sm">
+            <div class="flex flex-col items-center gap-2">
+                <span class="logo-en text-4xl md:text-5xl font-extrabold tracking-tight">
+                    masar<span class="text-brand-primary">.</span>
+                </span>
+                <span class="text-lg md:text-xl font-bold tracking-[0.25em] text-slate-500 dark:text-slate-400">مسار</span>
+            </div>
+            <p class="mt-4 text-sm md:text-base font-semibold opacity-80">جاري تحميل المنصة...</p>
+            <div class="mx-auto mt-5 w-40 sm:w-48 splash-bar"></div>
+        </div>
+    </div>
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-40 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            
+            <div class="cursor-pointer flex items-center gap-2" onclick="navigateTo('home')">
+                <div class="flex flex-col items-start leading-none">
+                    <span class="logo-en text-3xl font-extrabold text-brand-dark dark:text-white tracking-tight">
+                        masar<span class="text-brand-primary">.</span>
+                    </span>
+                    <span class="text-xs text-slate-500 dark:text-slate-400 font-bold -mt-1 tracking-widest mr-0.5">مسار</span>
+                </div>
+            </div>
+
+            <nav class="hidden lg:flex items-center gap-8 font-semibold text-slate-600 dark:text-slate-300">
+                <button data-target="home" onclick="navigateTo('home')" class="nav-button hover:text-brand-primary transition px-4 py-2 rounded-xl">الرئيسية</button>
+                <button data-target="courses" onclick="navigateTo('courses')" class="nav-button hover:text-brand-primary transition px-4 py-2 rounded-xl">تصفح الدورات</button>
+                <button data-target="teachers" onclick="navigateTo('teachers')" class="nav-button hover:text-brand-primary transition px-4 py-2 rounded-xl">المعلمون</button>
+                <button data-target="about" onclick="navigateTo('about')" class="nav-button hover:text-brand-primary transition px-4 py-2 rounded-xl">عن مسار</button>
+                
+                <button id="nav-teacher-dash" onclick="checkTeacherAccess()" class="hidden items-center gap-2 px-4 py-2 bg-brand-accent/10 border border-brand-accent/30 text-brand-accent rounded-xl hover:bg-brand-accent hover:text-white transition font-bold text-xs">
+                    <i class="fa-solid fa-chart-line"></i> لوحة المعلم
+                </button>
+                <button id="nav-owner-dash" onclick="navigateTo('owner-dash')" class="hidden text-rose-500 hover:underline font-bold">لوحة المنشئ (Owner)</button>
+            </nav>
+
+            <div class="flex items-center gap-3">
+                <div class="relative" id="settings-dropdown-wrapper">
+                    <button id="mobile-settings-button" onclick="toggleSettingsMenu(event)" class="lg:hidden w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600 transition">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                    <button onclick="toggleSettingsMenu(event)" class="hidden lg:flex w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-600 transition">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                    <div id="settings-menu" class="hidden absolute left-0 mt-2 w-56 max-w-[calc(100vw-1.5rem)] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-2xl space-y-3 z-50">
+                        <h4 class="font-bold text-xs text-slate-400 uppercase tracking-wider">الإعدادات</h4>
+                        <div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-700 pt-3">
+                            <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">الوضع الليلي</span>
+                            <button onclick="toggleDarkMode()" class="w-10 h-6 bg-slate-300 dark:bg-brand-primary rounded-full relative transition shrink-0">
+                                <div class="w-4 h-4 bg-white rounded-full absolute top-1 right-1 dark:left-1 dark:right-auto transition-all"></div>
+                            </button>
+                        </div>
+                        <div id="logout-btn-box" class="hidden border-t border-slate-100 dark:border-slate-700 pt-3">
+                            <button onclick="confirmLogout()" class="w-full text-right text-sm font-bold text-rose-500 hover:text-rose-600 flex items-center gap-2 py-1.5">
+                                <i class="fa-solid fa-right-from-bracket"></i> تسجيل الخروج
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="guest-actions" class="flex items-center gap-3">
+                    <button onclick="openRoleSelectionModal('register')" class="text-xs md:text-sm font-bold text-brand-primary border border-brand-primary/30 bg-brand-primary/5 px-4 py-2.5 rounded-xl hover:bg-brand-primary hover:text-white transition">
+                        إنشاء حساب
+                    </button>
+                    <button onclick="openRoleSelectionModal('login')" class="text-xs md:text-sm font-bold text-white bg-brand-primary px-5 py-2.5 rounded-xl shadow-lg shadow-brand-primary/20 hover:bg-indigo-700 transition">
+                        تسجيل الدخول
+                    </button>
+                </div>
+
+                <div id="user-info" class="hidden items-center gap-2.5 bg-slate-100 dark:bg-slate-700 px-3 py-1.5 rounded-xl">
+                    <div id="user-avatar-container" class="w-7 h-7 rounded-full overflow-hidden flex items-center justify-center bg-brand-primary text-white font-bold text-xs shrink-0">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <span id="user-display-name" class="text-xs font-bold"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav id="mobile-bottom-nav" class="fixed bottom-4 left-4 right-4 z-50 lg:hidden bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 rounded-[32px] shadow-2xl backdrop-blur-xl px-3 py-2">
+        <div class="grid grid-cols-4 gap-2">
+            <button data-target="home" onclick="navigateTo('home')" class="mobile-nav-button active flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <span class="material-icons text-brand-primary text-lg">home</span>
+                <span class="text-[10px] font-semibold">الرئيسية</span>
+            </button>
+            <button data-target="courses" onclick="navigateTo('courses')" class="mobile-nav-button flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <span class="material-icons text-brand-primary text-lg">school</span>
+                <span class="text-[10px] font-semibold">الدورات</span>
+            </button>
+            <button data-target="teachers" onclick="navigateTo('teachers')" class="mobile-nav-button flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <span class="material-icons text-brand-primary text-lg">people</span>
+                <span class="text-[10px] font-semibold">المعلمون</span>
+            </button>
+            <button id="mobile-teacher-or-about-btn" data-target="about" onclick="handleMobileTeacherNav()" class="mobile-nav-button flex flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-slate-700 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                <span id="mobile-teacher-or-about-icon" class="material-icons text-brand-primary text-lg">info</span>
+                <span id="mobile-teacher-or-about-text" class="text-[10px] font-semibold">عن مسار</span>
+            </button>
+        </div>
+    </nav>
+
+    <div id="pending-alert-banner" class="hidden bg-amber-500 text-white font-bold text-center py-2 text-xs md:text-sm">
+        <i class="fa-solid fa-hourglass-half ml-2"></i> طلب انضمامك كمعلم في حالة المراجعة والانتظار حالياً، سيتم تفعيل لوحة التحكم فور القبول.
+    </div>
+
+    <!-- Custom Notification & Confirmation Modal -->
+    <div id="custom-alert-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 max-w-sm w-full relative shadow-2xl text-center transform transition-all">
+            <div id="custom-alert-icon" class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl"></div>
+            <h3 id="custom-alert-title" class="text-xl font-bold text-slate-800 dark:text-white mb-2"></h3>
+            <p id="custom-alert-message" class="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed"></p>
+            
+            <div id="custom-alert-actions" class="flex items-center justify-center gap-3">
+                <button id="custom-alert-ok-btn" class="w-full bg-brand-primary text-white font-bold py-2.5 rounded-xl hover:bg-indigo-700 transition text-sm">موافق</button>
+                <button id="custom-alert-cancel-btn" class="hidden w-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-2.5 rounded-xl hover:bg-slate-300 dark:hover:bg-slate-600 transition text-sm">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay: shown the instant a form is submitted to the server, until the request finishes -->
+    <div id="loading-overlay-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[160] hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-xs w-full shadow-2xl text-center">
+            <div class="w-14 h-14 border-4 border-brand-primary/20 border-t-brand-primary rounded-full animate-spin mx-auto mb-4"></div>
+            <p id="loading-overlay-text" class="text-sm font-bold text-slate-700 dark:text-slate-200">جاري إرسال طلبك...</p>
+        </div>
+    </div>
+
+    <!-- Main Content Viewports -->
+    <main class="flex-grow">
+        <!-- 1. HOME VIEW -->
+        <section id="view-home" class="page-view active">
+            <div class="relative bg-gradient-to-b from-indigo-50/50 dark:from-slate-800/50 via-transparent to-transparent py-16 md:py-20">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="grid lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <span class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-primary/10 text-brand-primary text-xs font-bold mb-6">
+                                <i class="fa-solid fa-graduation-cap"></i> منصة التعليم الحديثة
+                            </span>
+                            <h1 class="text-4xl md:text-5xl font-black text-brand-dark dark:text-white leading-tight mb-6">
+                                ابدأ <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-primary to-brand-accent">مسارك</span> التعليمي بكل سهولة
+                            </h1>
+                            <p class="text-slate-600 dark:text-slate-300 text-lg mb-8 leading-relaxed">
+                                منصة "مسار" تجمع أفضل المدرسين والطلاب في بيئة تعليمية تفاعلية ومتكاملة. قم بتسجيل الدخول للاطلاع على كافة الدورات المتاحة.
+                            </p>
+                        </div>
+                        <div class="relative">
+                            <div class="bg-gradient-to-tr from-brand-primary to-brand-accent rounded-3xl p-1 transform rotate-1 shadow-2xl">
+                                <div class="bg-white dark:bg-slate-800 rounded-[22px] p-6 text-slate-800 dark:text-slate-100">
+                                    <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-700">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-indigo-100 text-brand-primary flex items-center justify-center font-bold text-lg">م</div>
+                                            <div>
+                                                <h4 class="font-bold text-sm">إعلان المنصة الرسمية</h4>
+                                                <p class="text-xs text-slate-500 dark:text-slate-400">شاهد مميزات منصة مسار</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="rounded-xl overflow-hidden shadow-lg">
+                                        <div id="promo-video-player" class="plyr__video-embed" data-plyr-provider="youtube" data-plyr-embed-id="2owk54ccTsE"></div>
+                                    </div>
+                                    <h5 class="font-bold text-sm mt-3">تعرّف على طريقة الانضمام وبدء رحلتك</h5>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. COURSES VIEW -->
+        <section id="view-courses" class="page-view py-12 max-w-7xl mx-auto px-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+                <div>
+                    <h1 class="text-3xl font-black text-brand-dark dark:text-white mb-1">الدورات المتاحة</h1>
+                    <p class="text-slate-500 text-sm">اختر الدورة لاستعراض الحصص المتاحة ومتابعة تقدمك</p>
+                </div>
+                <div class="relative w-full md:w-72">
+                    <i class="fa-solid fa-magnifying-glass absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="course-search-input" oninput="filterCourses(this.value)" placeholder="ابحث باسم الدورة أو المعلم..." 
+                           class="w-full pl-3 pr-9 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs focus:ring-2 focus:ring-brand-primary focus:outline-none shadow-sm transition">
+                </div>
+            </div>
+
+            <div id="login-required-notice" class="hidden text-center py-16 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700">
+                <i class="fa-solid fa-lock text-5xl text-brand-primary mb-4"></i>
+                <h3 class="text-xl font-bold mb-2">عذراً! يلزم تسجيل الدخول لمشاهدة الدورات</h3>
+                <p class="text-xs text-slate-400 mb-6">قم بتسجيل الدخول أو انضم كطالب لتتمكن من الوصول لجميع الكورسات.</p>
+                <button onclick="openRoleSelectionModal('login')" class="bg-brand-primary text-white font-bold px-6 py-3 rounded-xl hover:bg-indigo-700 transition">
+                    تسجيل الدخول الآن
+                </button>
+            </div>
+            <div id="all-courses-list" class="grid md:grid-cols-3 gap-6"></div>
+        </section>
+
+        <!-- 2.B COURSE DETAILS VIEW -->
+        <section id="view-course-details" class="page-view py-12 max-w-5xl mx-auto px-4">
+            <button onclick="navigateTo('courses')" class="mb-6 inline-flex items-center gap-2 text-sm font-bold text-brand-primary hover:underline">
+                <i class="fa-solid fa-arrow-right"></i> العودة لقائمة الدورات
+            </button>
+            <div id="course-details-header" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-8 rounded-3xl shadow-sm mb-8"></div>
+            <h3 class="text-2xl font-black mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-list-check text-brand-primary"></i> حصص الدورة
+            </h3>
+            <div id="course-lessons-container" class="space-y-4"></div>
+        </section>
+
+        <!-- 3. TEACHERS VIEW -->
+        <section id="view-teachers" class="page-view py-12 max-w-7xl mx-auto px-4">
+            <h1 class="text-3xl font-black text-brand-dark dark:text-white mb-2 text-center">المعلمون</h1>
+            <div id="teachers-login-required-notice" class="hidden text-center py-16 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700">
+                <i class="fa-solid fa-lock text-5xl text-brand-primary mb-4"></i>
+                <h3 class="text-xl font-bold mb-2">عذراً! يلزم تسجيل الدخول لالطلاع على المعلمين</h3>
+                <p class="text-xs text-slate-400 mb-6">قم بتسجيل الدخول أو انضم كطالب لتتمكن من الوصول إلى صفحة المعلمين والدورات الخاصة بهم.</p>
+                <button onclick="openRoleSelectionModal('login')" class="bg-brand-primary text-white font-bold px-6 py-3 rounded-xl hover:bg-indigo-700 transition">
+                    تسجيل الدخول الآن
+                </button>
+            </div>
+            <div id="approved-teachers-list" class="grid md:grid-cols-4 gap-6 mt-8"></div>
+        </section>
+
+        <!-- 3.B TEACHER PROFILE VIEW -->
+        <section id="view-teacher-profile" class="page-view py-12 max-w-7xl mx-auto px-4">
+            <button onclick="navigateTo('teachers')" class="mb-6 inline-flex items-center gap-2 text-sm font-bold text-brand-primary hover:underline">
+                <i class="fa-solid fa-arrow-right"></i> العودة لقائمة المعلمين
+            </button>
+            <div id="teacher-profile-header" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-8 rounded-3xl mb-8 flex items-center gap-6"></div>
+            <h2 class="text-2xl font-black text-brand-dark dark:text-white mb-6">الدورات المقدمة من المعلم</h2>
+            <div id="teacher-courses-list" class="grid md:grid-cols-3 gap-6"></div>
+        </section>
+
+        <!-- 4. ABOUT VIEW -->
+        <section id="view-about" class="page-view py-16 max-w-4xl mx-auto px-4 text-center">
+            <h1 class="text-3xl font-black text-brand-dark dark:text-white mb-4">عن منصة masar | مسار</h1>
+            <p class="text-slate-600 dark:text-slate-300 leading-relaxed">
+                المنصة التعليمية الشاملة لتمكين المدرسين والطلاب من التواصل والمتابعة وسهولة التعلم.
+            </p>
+        </section>
+
+        <!-- 5. TEACHER DASHBOARD VIEW -->
+        <section id="view-teacher-dash" class="page-view py-12 max-w-7xl mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <div>
+                    <h1 class="text-3xl font-black text-brand-dark dark:text-white">لوحة تحكم المعلم</h1>
+                    <p class="text-slate-500 text-sm">أضف وأدر الدورات الخاصة بك وقيم اشتراكات الطلاب</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="openEditTeacherProfileModal()" class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 font-bold px-4 py-2.5 rounded-xl text-xs hover:bg-slate-200 dark:hover:bg-slate-600 transition flex items-center gap-2">
+                        <i class="fa-solid fa-user-pen"></i> تعديل صورتي وملاحظاتي
+                    </button>
+                    <button onclick="openCourseModal()" class="bg-brand-primary text-white font-bold px-4 py-2.5 rounded-xl text-xs hover:bg-indigo-700 transition flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> إضافة دورة جديدة
+                    </button>
+                </div>
+            </div>
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 mb-10">
+                <h3 class="font-bold text-xl mb-4 text-emerald-500">طلبات اشتراك الطلاب المعلقة</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200">
+                            <tr>
+                                <th class="p-3">اسم الطالب</th>
+                                <th class="p-3">اسم الدورة</th>
+                                <th class="p-3">رقم الهاتف المحول منه</th>
+                                <th class="p-3">إيصال الدفع</th>
+                                <th class="p-3">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teacher-subscriptions-table"></tbody>
+                    </table>
+                </div>
+            </div>
+            <h3 class="font-bold text-xl mb-4 text-brand-dark dark:text-white">دوراتي المضافة</h3>
+            <div id="teacher-courses-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+        <!-- 6. OWNER DASHBOARD VIEW -->
+        <section id="view-owner-dash" class="page-view py-12 max-w-7xl mx-auto px-4">
+            <h1 class="text-3xl font-black text-rose-600 mb-2">لوحة تحكم المنشئ (Owner Admin)</h1>
+            <p class="text-slate-500 text-sm mb-8">إدارة الطلبات، المعلمين، الاشتراكات، والدورات المضافة</p>
+            <div class="space-y-8">
+                <!-- Teacher Subscription Requests Admin Table -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h3 class="font-bold text-xl mb-4 text-indigo-500"><i class="fa-solid fa-file-invoice-dollar ml-2"></i> طلبات اشتراك المعلمين بالمنصة</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-sm">
+                            <thead class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200">
+                                <tr>
+                                    <th class="p-3">اسم المعلم</th>
+                                    <th class="p-3">اسم الحساب</th>
+                                    <th class="p-3">كلمة المرور</th>
+                                    <th class="p-3">الخطة المختارة</th>
+                                    <th class="p-3">المدة</th>
+                                    <th class="p-3">الإيصال</th>
+                                    <th class="p-3">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="owner-teacher-plan-requests-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h3 class="font-bold text-xl mb-4 text-amber-500">طلبات انضمام المعلمين الجديدة</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-sm">
+                            <thead class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200">
+                                <tr>
+                                    <th class="p-3">الصورة</th>
+                                    <th class="p-3">الاسم</th>
+                                    <th class="p-3">التخصص</th>
+                                    <th class="p-3">البريد الإلكتروني</th>
+                                    <th class="p-3">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="owner-pending-teachers-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h3 class="font-bold text-xl mb-4 text-emerald-500">المعلمون المقبولون</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-sm">
+                            <thead class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200">
+                                <tr>
+                                    <th class="p-3">الصورة</th>
+                                    <th class="p-3">الاسم</th>
+                                    <th class="p-3">التخصص</th>
+                                    <th class="p-3">البريد الإلكتروني</th>
+                                    <th class="p-3">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="owner-approved-teachers-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                    <h3 class="font-bold text-xl mb-4 text-brand-dark dark:text-white">إدارة جميع الكورسات والحصص</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right text-sm">
+                            <thead class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200">
+                                <tr>
+                                    <th class="p-3">اسم الكورس</th>
+                                    <th class="p-3">المعلم</th>
+                                    <th class="p-3">عدد الحصص</th>
+                                    <th class="p-3">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="owner-courses-table"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ROLE SELECTION MODAL -->
+    <div id="role-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-sm w-full relative shadow-2xl text-center">
+            <button onclick="closeModal('role-modal')" class="absolute top-5 left-5 text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 id="role-modal-title" class="text-2xl font-bold text-brand-dark dark:text-white mb-6">اختر نوع الحساب</h3>
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="selectRole('teacher')" class="p-5 border-2 border-slate-200 dark:border-slate-700 hover:border-brand-primary dark:hover:border-brand-primary rounded-2xl flex flex-col items-center justify-center gap-2 group transition">
+                    <i class="fa-solid fa-chalkboard-user text-3xl text-slate-400 group-hover:text-brand-primary transition"></i>
+                    <span class="font-bold text-sm">معلم</span>
+                </button>
+                <button onclick="selectRole('student')" class="p-5 border-2 border-slate-200 dark:border-slate-700 hover:border-brand-primary dark:hover:border-brand-primary rounded-2xl flex flex-col items-center justify-center gap-2 group transition">
+                    <i class="fa-solid fa-user-graduate text-3xl text-slate-400 group-hover:text-brand-primary transition"></i>
+                    <span class="font-bold text-sm">طالب</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TEACHER PLANS SELECTION MODAL -->
+    <div id="teacher-plans-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] hidden items-start justify-center p-4 overflow-y-auto">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 max-w-4xl w-full relative shadow-2xl my-8">
+            <button onclick="closeModal('teacher-plans-modal')" class="absolute top-5 left-5 text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="text-2xl font-black text-brand-dark dark:text-white mb-2 text-center">اختر خطة الاشتراك المناسبة لك كمعلم</h3>
+            <p class="text-xs text-slate-500 text-center mb-6">احصل على صلاحية إضافة كورساتك واستضافة حصصك اليومية</p>
+            
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <!-- Plan 1 -->
+                <div class="pricing-plan-card rounded-[24px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-[0_12px_35px_-18px_rgba(15,23,42,0.35)] overflow-hidden flex flex-col">
+                    <div class="px-4 sm:px-5 py-4 bg-slate-50 dark:bg-slate-800">
+                        <span class="inline-flex items-center gap-2 rounded-full bg-indigo-100 text-indigo-700 text-[11px] font-bold px-3 py-1">الخطة الأساسية</span>
+                        <p class="mt-3 text-sm text-slate-500 dark:text-slate-400">ابدأ بخطة بسيطة مع استضافة حصتين يومياً.</p>
+                    </div>
+                    <div class="px-4 sm:px-5 py-4 flex-1 flex flex-col justify-between space-y-4">
+                        <div class="rounded-2xl bg-slate-50/80 dark:bg-slate-800/70 p-4 text-center">
+                            <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400">السعر</div>
+                            <div id="plan1-price-display" class="text-[2.2rem] sm:text-[2.6rem] font-black text-brand-primary leading-none">300</div>
+                            <div id="plan1-period-display" class="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">ج.م / شهرياً</div>
+                        </div>
+                        <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                            <li class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-brand-primary mt-0.5"></span> استضافة حصتين يومياً</li>
+                        </ul>
+                        <div class="space-y-3">
+                            <div class="rounded-2xl bg-slate-100 dark:bg-slate-800 p-3">
+                                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2">المدة</label>
+                                <select id="plan1-cycle" onchange="updatePlanPrice('plan1')" class="w-full text-xs p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-100">
+                                    <option value="monthly">شهري - 300 ج.م</option>
+                                    <option value="yearly">سنوي - 1500 ج.م</option>
+                                </select>
+                            </div>
+                            <button onclick="selectTeacherPlan('Plan1')" class="w-full rounded-2xl bg-brand-primary text-white py-3 font-bold hover:bg-indigo-600 transition">اشترك الآن</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Plan 2 -->
+                <div class="pricing-plan-card relative rounded-[24px] border border-brand-primary bg-gradient-to-br from-brand-primary/10 via-white to-slate-50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-900 shadow-[0_20px_45px_-18px_rgba(79,70,229,0.35)] overflow-visible flex flex-col">
+                    <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                        <span class="inline-flex items-center rounded-full bg-brand-primary px-3 py-1 text-[11px] font-black text-white shadow-lg">الأكثر شعبية</span>
+                    </div>
+                    <div class="px-4 sm:px-5 py-4 pt-6 bg-transparent">
+                        <span class="inline-flex items-center gap-2 rounded-full bg-indigo-100 text-brand-primary text-[11px] font-bold px-3 py-1">الخطة الاحترافية</span>
+                        <p class="mt-3 text-sm text-slate-600 dark:text-slate-300">خيار قوي لاستضافة حتى 5 حصص يومياً.</p>
+                    </div>
+                    <div class="px-4 sm:px-5 py-4 flex-1 flex flex-col justify-between space-y-4">
+                        <div class="rounded-2xl bg-white/80 dark:bg-slate-800/70 p-4 text-center">
+                            <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400">السعر</div>
+                            <div id="plan2-price-display" class="text-[2.2rem] sm:text-[2.6rem] font-black text-slate-950 dark:text-white leading-none">500</div>
+                            <div id="plan2-period-display" class="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">ج.م / شهرياً</div>
+                        </div>
+                        <ul class="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+                            <li class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-brand-primary mt-0.5"></span> استضافة حتى 5 حصص يومياً</li>
+                        </ul>
+                        <div class="space-y-3">
+                            <div class="rounded-2xl bg-slate-100 dark:bg-slate-800 p-3">
+                                <label class="block text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2">المدة</label>
+                                <select id="plan2-cycle" onchange="updatePlanPrice('plan2')" class="w-full text-xs p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 font-bold text-slate-800 dark:text-slate-100">
+                                    <option value="monthly">شهري - 500 ج.م</option>
+                                    <option value="yearly">سنوي - 2100 ج.م</option>
+                                </select>
+                            </div>
+                            <button onclick="selectTeacherPlan('Plan2')" class="w-full rounded-2xl bg-brand-primary text-white py-3 font-bold hover:bg-indigo-600 transition">اشترك الآن</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Plan 3 Free Trial -->
+                <div id="free-trial-card" class="pricing-plan-card rounded-[24px] border border-emerald-200 bg-emerald-50/70 dark:border-emerald-500 dark:bg-emerald-950/20 shadow-[0_12px_35px_-18px_rgba(16,185,129,0.35)] overflow-hidden flex flex-col">
+                    <div class="px-4 sm:px-5 py-4 bg-emerald-100/60 dark:bg-emerald-900/70">
+                        <span class="inline-flex items-center gap-2 rounded-full bg-emerald-500 text-white text-[11px] font-bold px-3 py-1">تجربة مجانية</span>
+                        <p class="mt-3 text-sm text-slate-700 dark:text-slate-300">ابدا التجربة المجانية لمدة اسبوع واحد.</p>
+                    </div>
+                    <div class="px-4 sm:px-5 py-4 flex-1 flex flex-col justify-between space-y-4">
+                        <div class="rounded-2xl bg-white/70 dark:bg-slate-800/70 p-4 text-center">
+                            <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400">السعر</div>
+                            <div class="text-[2.2rem] sm:text-[2.6rem] font-black text-emerald-600 leading-none">مجاني</div>
+                            <div class="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">أسبوع واحد</div>
+                        </div>
+                        <ul class="space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                            <li class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-emerald-600 mt-0.5"></span> حصة يومية واحدة</li>
+                        </ul>
+                        <button onclick="selectTeacherPlan('FreeTrial')" class="w-full rounded-2xl bg-emerald-600 text-white py-3 font-bold hover:bg-emerald-700 transition">ابدأ التجربة</button>
+                    </div>
+                </div>
+            </div>
+
+          
+        </div>
+    </div>
+
+    <!-- TEACHER PAYMENT VODAFONE MODAL -->
+    <div id="teacher-payment-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full relative shadow-2xl text-center">
+            <button onclick="closeModal('teacher-payment-modal')" class="absolute top-5 left-5 text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            
+            <!-- Vodafone Cash Custom Logo -->
+            <div class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4 text-white font-black text-xs shadow-lg shadow-red-600/30 tracking-tighter">
+                Vodafone
+            </div>
+            
+            <h3 class="text-2xl font-bold text-brand-dark dark:text-white mb-2">الدفع عبر فودافون كاش</h3>
+            <p class="text-xs text-slate-500 mb-4">يرجى تحويل المبلغ المطلوب إلى الرقم أدناه ورفع إيصال التحويل للاشتراك:</p>
+            
+            <div class="bg-slate-50 dark:bg-slate-700 p-4 rounded-2xl mb-4 space-y-2">
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-500 dark:text-slate-400">رقم تحويل فودافون كاش:</span>
+                    <span class="font-black text-red-600 text-base">01070827731</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-500 dark:text-slate-400">المبلغ المطلوب:</span>
+                    <span id="teacher-pay-amount" class="font-bold text-brand-primary"></span>
+                </div>
+            </div>
+
+            <form onsubmit="submitTeacherSubscription(event)" class="space-y-3 text-right">
+                <div>
+                    <label class="block text-xs font-bold mb-1">صورة الإيصال</label>
+                    <input type="file" id="teacher-receipt-file" accept="image/*" required class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs">
+                </div>
+                <button type="submit" class="w-full bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 transition text-sm">
+                    إرسال طلب الاشتراك للمنشئ
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- AUTH MODAL -->
+    <div id="auth-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full relative shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button onclick="closeAuthModal()" class="absolute top-5 left-5 text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 id="modal-title" class="text-2xl font-bold text-brand-dark dark:text-white mb-2 text-center">تسجيل الدخول</h3>
+            
+            <form class="space-y-4" onsubmit="handleAuthSubmit(event)">
+                <div id="teacher-avatar-box" class="hidden">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">الصورة الشخصية للمعلم</label>
+                    <input type="file" id="auth-teacher-avatar" accept="image/*" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs">
+                </div>
+                <div id="teacher-spec-box" class="hidden">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">التخصص / المادة</label>
+                    <input type="text" id="auth-spec" placeholder="مثال: علوم، رياضيات، فيزياء..." class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm">
+                </div>
+                <div id="auth-name-box">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">الاسم الكامل</label>
+                    <input type="text" id="auth-name" placeholder="أحمد محمد" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">البريد الإلكتروني</label>
+                    <input type="email" id="auth-email" placeholder="name@domain.com" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">كلمة المرور</label>
+                    <input type="password" id="auth-password" placeholder="••••••••" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm">
+                </div>
+                <button type="submit" class="w-full bg-brand-primary text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition">
+                    متابعة
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- EDIT TEACHER PROFILE MODAL -->
+    <div id="edit-teacher-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full relative shadow-2xl">
+            <button onclick="closeModal('edit-teacher-modal')" class="absolute top-5 left-5 text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="text-2xl font-bold text-brand-dark dark:text-white mb-4 text-center">تعديل الصورة الشخصية والمعلومات</h3>
+            <form class="space-y-4" onsubmit="handleUpdateTeacherProfile(event)">
+                <div class="text-center mb-4">
+                    <div id="edit-avatar-preview" class="w-20 h-20 rounded-full mx-auto bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-brand-primary font-bold text-2xl overflow-hidden mb-2">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">تغيير الصورة الشخصية</label>
+                    <input type="file" id="edit-teacher-avatar" accept="image/*" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">التخصص</label>
+                    <input type="text" id="edit-teacher-spec" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm">
+                </div>
+                <button type="submit" class="w-full bg-brand-primary text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition">
+                    حفظ التعديلات
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- FULLSCREEN PLAYER MODAL -->
+    <!-- Custom Advanced Video Player Modal for Masar -->
+<div id="fullscreen-player-modal" class="fixed inset-0 z-[120] hidden flex items-center justify-center p-2 sm:p-4 bg-slate-950/90 backdrop-blur-md transition-all">
+    <div id="video-panel-main" class="relative w-full max-w-5xl max-h-[calc(100vh-1rem)] h-full rounded-3xl overflow-hidden bg-slate-900 border border-slate-700/60 shadow-2xl flex flex-col">
+        
+        <!-- Topbar -->
+        <div class="flex justify-between items-center px-4 py-3 bg-slate-900/80 border-b border-slate-800 text-slate-200 z-20">
+            <div class="flex flex-col gap-1">
+                <div class="flex items-center gap-2 font-bold text-xs sm:text-sm tracking-wide">
+                    <span class="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-amber-400 to-rose-500 shadow-sm shadow-amber-500/50"></span>
+                    <span id="fs-lesson-title" class="truncate max-w-[200px] sm:max-w-md">مشغل الحصة التفاعلي</span>
+                </div>
+                <span id="fs-course-title" class="text-[11px] text-slate-400 truncate max-w-[260px] sm:max-w-[420px]">اسم الكورس</span>
+            </div>
+            <button onclick="closeFullscreenPlayer()" type="button" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white flex items-center justify-center transition">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+        </div>
+
+        <!-- Video Stage Area -->
+        <div id="video-stage-container" class="relative w-full aspect-video bg-black overflow-hidden select-none group">
+            
+            <!-- Loading Indicator Line -->
+            <div id="video-loading-line" class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent -translate-x-full opacity-0 z-10 transition-opacity"></div>
+
+            <!-- Plyr Fullscreen Player Container -->
+            <div id="fs-player-container" class="absolute inset-0 z-0"></div>
+
+            <!-- YouTube Custom Iframe -->
+            <div id="yt-player-target" class="absolute inset-0 w-full h-full pointer-events-none transition-all duration-300"></div>
+
+            <!-- Transparent protection overlay (blocks iframe UI like share) - behind control bar but below click area -->
+            <div id="video-protect-overlay" class="absolute inset-x-0 top-0 bottom-[4.5rem] z-10 bg-black/5" style="pointer-events:auto;"></div>
+
+            <!-- End-overlay to hide YouTube suggestions and provide replay/close actions -->
+            <div id="yt-end-overlay" class="absolute inset-0 z-40 hidden bg-black/90 flex items-center justify-center text-white p-4" style="pointer-events:auto;">
+                <div class="text-center">
+                    <p class="mb-4 text-lg font-bold">انتهى الفيديو</p>
+                    <div class="flex items-center gap-3 justify-center">
+                        <button id="yt-replay-btn" class="bg-white text-black px-4 py-2 rounded-lg font-bold">إعادة</button>
+                        <button id="yt-close-end-btn" class="bg-transparent border border-white px-4 py-2 rounded-lg">إغلاق</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Click Overlay Area (above video, below control bar) -->
+            <div id="video-click-area" class="absolute inset-x-0 top-0 bottom-[4.5rem] z-20 cursor-pointer"></div>
+
+            <!-- Action Badge (+10s / -10s) -->
+            <div id="custom-action-badge" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 opacity-0 pointer-events-none transition-all duration-200 scale-90 bg-slate-900/90 border border-cyan-500/40 text-white px-5 py-2.5 rounded-full text-base font-bold shadow-xl flex items-center gap-2">
+                <span id="badge-text-val">+10s</span>
+            </div>
+
+            <!-- Center Play/Pause Indicator -->
+            <div id="custom-center-play" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-16 h-16 rounded-full bg-slate-900/90 border-2 border-brand-primary text-brand-primary flex items-center justify-center pointer-events-none opacity-0 transition-all duration-300 text-2xl shadow-xl shadow-brand-primary/20">
+                <i class="fa-solid fa-play"></i>
+            </div>
+
+            <!-- Control Bar -->
+            <div id="video-control-bar" class="absolute bottom-3 left-3 right-3 z-30 flex flex-row-reverse items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-slate-900/85 border border-slate-700/80 backdrop-blur-md shadow-2xl transition-all duration-500 ease-out opacity-100 translate-y-0 pointer-events-auto">
+                
+                <!-- Transport (play / seek) — يمين في RTL -->
+                <div class="cb-transport flex items-center gap-2 shrink-0">
+                    <button id="btn-back10" type="button" class="w-8 h-8 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 flex items-center justify-center text-xs font-bold transition hover:-translate-y-0.5">
+                        <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                    <button id="btn-play-toggle" type="button" class="w-9 h-9 rounded-xl bg-brand-primary hover:bg-indigo-600 text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-brand-primary/30 transition hover:-translate-y-0.5">
+                        <i class="fa-solid fa-play"></i>
+                    </button>
+                    <button id="btn-forward10" type="button" class="w-8 h-8 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 flex items-center justify-center text-xs font-bold transition hover:-translate-y-0.5">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+
+                <!-- Progress -->
+                <div class="cb-progress flex items-center gap-2 flex-1 min-w-0 justify-center">
+                    <span id="time-current" class="text-xs font-mono font-bold text-slate-300 min-w-[40px] text-center shrink-0">00:00</span>
+                    <span id="live-indicator" class="hidden text-xs font-bold text-red-500 min-w-[40px] text-center shrink-0 uppercase">🔴 LIVE</span>
+                    <div class="relative w-full max-w-md flex items-center gap-2">
+                        <button id="btn-live-now" type="button" class="hidden shrink-0 px-2.5 py-1 rounded-full border border-rose-400/30 bg-rose-500/10 text-[10px] font-bold uppercase tracking-wide text-rose-400 whitespace-nowrap">LIVE NOW</button>
+                        <input id="progress-slider" type="range" min="0" max="100" value="0" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-primary min-w-[80px]">
+                        <div id="timeline-hover-box" class="hidden absolute left-1/2 top-[-2.4rem] -translate-x-1/2 px-3 py-1 rounded-full bg-slate-950/95 border border-slate-600/70 text-[11px] text-slate-100 font-semibold shadow-xl pointer-events-none whitespace-nowrap">
+                            00:00
+                        </div>
+                    </div>
+                    <span id="time-duration" class="text-xs font-mono font-bold text-slate-400 min-w-[40px] text-center shrink-0">00:00</span>
+                </div>
+
+                <!-- Settings & system — يسار في RTL -->
+                <div class="cb-settings flex items-center gap-2 shrink-0">
+                    <div class="relative inline-flex items-center">
+                        <button id="btn-settings-toggle" type="button" class="w-8 h-8 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 flex items-center justify-center text-xs transition">
+                            <i class="fa-solid fa-gear"></i>
+                        </button>
+
+                        <div id="settings-popup-menu" class="hidden absolute bottom-12 right-0 w-64 p-4 rounded-[28px] bg-slate-900/95 border border-slate-700 shadow-2xl backdrop-blur-xl z-50 flex-col gap-3">
+                            <div>
+                                <span class="text-[11px] font-extrabold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                                    <i class="fa-solid fa-gauge-high"></i> سرعة التشغيل
+                                </span>
+                                <div class="grid grid-cols-5 gap-1">
+                                    <button class="speed-btn px-1.5 py-1 text-[11px] font-bold rounded-lg border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700 transition" data-speed="0.75">0.75×</button>
+                                    <button class="speed-btn px-1.5 py-1 text-[11px] font-bold rounded-lg border border-brand-primary bg-brand-primary/20 text-brand-primary" data-speed="1">1×</button>
+                                    <button class="speed-btn px-1.5 py-1 text-[11px] font-bold rounded-lg border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700 transition" data-speed="1.25">1.25×</button>
+                                    <button class="speed-btn px-1.5 py-1 text-[11px] font-bold rounded-lg border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700 transition" data-speed="1.5">1.5×</button>
+                                    <button class="speed-btn px-1.5 py-1 text-[11px] font-bold rounded-lg border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700 transition" data-speed="2">2×</button>
+                                </div>
+                            </div>
+
+                            <hr class="border-slate-800 my-1">
+
+                            <div>
+                                <span class="text-[11px] font-extrabold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+                                    <i class="fa-solid fa-sliders"></i> الجودة
+                                </span>
+                                <div class="grid grid-cols-5 gap-1">
+                                    <button class="quality-btn px-1.5 py-1 text-[11px] font-bold rounded-lg border border-brand-primary bg-brand-primary/20 text-brand-primary" data-quality="auto">تلقائي</button>
+                                    <button class="quality-btn px-1.5 py-1 text-[11px] font-bold rounded-lg border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700 transition" data-quality="hd1080">1080p</button>
+                                    <button class="quality-btn px-1.5 py-1 text-[11px] font-bold rounded-lg border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700 transition" data-quality="hd720">720p</button>
+                                    <button class="quality-btn px-1.5 py-1 text-[11px] font-bold rounded-lg border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700 transition" data-quality="large">480p</button>
+                                    <button class="quality-btn px-1.5 py-1 text-[11px] font-bold rounded-lg border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700 transition" data-quality="medium">360p</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button id="btn-mute-toggle" type="button" class="w-8 h-8 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 flex items-center justify-center text-xs transition">
+                        <i class="fa-solid fa-volume-high"></i>
+                    </button>
+                    <button id="btn-fullscreen-toggle" type="button" class="w-8 h-8 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 flex items-center justify-center text-xs transition" title="ملء الشاشة">
+                        <i class="fa-solid fa-expand"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Live Quality Filter Simulation */
+    .q-360p iframe { filter: blur(1.7px) contrast(115%) brightness(95%); }
+    .q-480p iframe { filter: blur(1.2px) contrast(108%); }
+    .q-720p iframe { filter: blur(0.4px); }
+    .q-1080p iframe, .q-auto iframe { filter: none; }
+
+    #yt-player-target,
+    #yt-player-target iframe,
+    #yt-player-instance,
+    #yt-player-instance iframe {
+        width: 100% !important;
+        height: 100% !important;
+    }
+
+    #video-stage-container:fullscreen,
+    #video-stage-container:-webkit-full-screen {
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: none;
+        aspect-ratio: auto !important;
+        border-radius: 0;
+        background: #000;
+    }
+
+    #video-stage-container:fullscreen #video-control-bar,
+    #video-stage-container:-webkit-full-screen #video-control-bar {
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+    }
+
+    #video-control-bar {
+        transition: opacity 0.28s ease, transform 0.28s ease;
+    }
+
+    #video-protect-overlay {
+        z-index: 18 !important;
+        bottom: 4.5rem !important;
+        pointer-events: auto !important;
+    }
+
+    #fullscreen-player-modal {
+        padding: 0.75rem;
+    }
+
+    #video-panel-main {
+        border-radius: 2rem;
+    }
+
+    #video-stage-container {
+        min-height: 260px;
+    }
+
+    #timeline-hover-box {
+        position: absolute;
+        left: 50%;
+        top: -2.4rem;
+        transform: translateX(-50%);
+        padding: 6px 10px;
+        min-width: 62px;
+        text-align: center;
+        font-size: 11px;
+        letter-spacing: 0.02em;
+        background: rgba(15, 23, 42, 0.96);
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        border-radius: 9999px;
+        color: #f8fafc;
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+        z-index: 40;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 160ms ease;
+    }
+
+    #timeline-hover-box.visible {
+        opacity: 1;
+    }
+
+    #progress-slider:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+    }
+
+    #btn-live-now {
+        box-shadow: inset 0 0 0 1px rgba(251, 113, 133, 0.2);
+    }
+
+    #settings-menu,
+    #settings-popup-menu {
+        border-radius: 1.75rem;
+        box-shadow: 0 24px 65px rgba(15, 23, 42, 0.25);
+    }
+
+    #settings-popup-menu {
+        min-width: 18rem;
+    }
+
+    /* Comprehensive mobile rework of the fullscreen video player */
+    @media (max-width: 768px) {
+        #video-panel-main {
+            max-width: calc(100vw - 1rem);
+            width: calc(100vw - 1rem);
+            max-height: calc(100vh - 1rem);
+            border-radius: 1.25rem;
+        }
+
+        #video-stage-container {
+            aspect-ratio: 16 / 9;
+            min-height: 200px;
+        }
+
+        /* Topbar: tighter padding + smaller title so it never crowds the close button */
+        #video-panel-main > div:first-child {
+            padding: 0.65rem 0.85rem;
+        }
+
+        #fs-lesson-title {
+            font-size: 0.75rem;
+            max-width: 60vw;
+        }
+
+        #fs-course-title {
+            font-size: 0.65rem;
+            max-width: 60vw;
+        }
+
+        /* Control bar: two-row layout on mobile so the timeline never overlaps the
+           playback/settings buttons — row 1 is the full-width scrubber, row 2 is controls */
+        #video-control-bar {
+            left: 0.5rem;
+            right: 0.5rem;
+            bottom: 0.6rem;
+            padding: 0.55rem 0.65rem 0.6rem;
+            gap: 0.55rem;
+            border-radius: 1.25rem;
+            flex-wrap: wrap;
+            align-items: stretch;
+        }
+
+        #video-control-bar .cb-progress {
+            order: -1;
+            flex: 1 1 100%;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        #video-control-bar .cb-progress > div {
+            max-width: none;
+        }
+
+        #video-control-bar .cb-transport,
+        #video-control-bar .cb-settings {
+            flex: 0 0 auto;
+        }
+
+        #video-control-bar .cb-transport {
+            order: 2;
+        }
+
+        #video-control-bar .cb-settings {
+            order: 3;
+            gap: 0.35rem !important;
+        }
+
+        #btn-back10, #btn-forward10, #btn-mute-toggle, #btn-settings-toggle, #btn-fullscreen-toggle {
+            width: 2.25rem;
+            height: 2.25rem;
+        }
+
+        #btn-play-toggle {
+            width: 2.5rem;
+            height: 2.5rem;
+        }
+
+        #time-current, #time-duration {
+            font-size: 0.65rem;
+            min-width: 30px;
+        }
+
+        /* Click/protect zones must match the taller two-row mobile control bar */
+        #video-click-area,
+        #video-protect-overlay {
+            bottom: 6.4rem;
+        }
+
+        /* Settings popup becomes a compact bottom sheet anchored above the taller bar */
+        #settings-popup-menu {
+            left: auto;
+            right: 0.5rem;
+            bottom: 6.5rem;
+            width: calc(100vw - 1.5rem);
+            max-width: 22rem;
+            max-height: min(55vh, 22rem);
+            overflow-y: auto;
+            padding: 0.9rem;
+            border-radius: 1.25rem;
+        }
+
+        #settings-popup-menu .speed-btn,
+        #settings-popup-menu .quality-btn {
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+
+        /* Header (top navbar) settings menu: constrained so it can never spill off-screen */
+        #settings-menu {
+            left: auto;
+            right: 0;
+            width: calc(100vw - 1.5rem);
+            max-width: 16rem;
+        }
+    }
+</style>
+
+    <!-- ADD COURSE MODAL -->
+    <div id="course-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full relative shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button onclick="closeCourseModal()" class="absolute top-5 left-5 text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="text-2xl font-bold text-brand-dark dark:text-white mb-4 text-center">إضافة دورة جديدة</h3>
+            <form class="space-y-4" onsubmit="handleAddCourse(event)">
+                <div>
+                    <label class="block text-xs font-bold mb-1">اسم المادة / التخصص</label>
+                    <input type="text" id="course-subject" placeholder="مثال: العلوم، الفيزياء..." required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold mb-1">عنوان الدورة</label>
+                    <input type="text" id="course-title" placeholder="عنوان الدورة الشاملة" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold mb-1">سعر الدورة (بالجنيه)</label>
+                    <input type="number" id="course-price" placeholder="150" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold mb-1">رقم فودافون كاش الخاص بك لاستلام الأموال</label>
+                    <input type="text" id="course-vodafone" placeholder="01012345678" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold mb-1">صورة غلاف الدورة</label>
+                    <input type="file" id="course-image" accept="image/*" required class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold mb-1">الوصف</label>
+                    <textarea id="course-desc" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm"></textarea>
+                </div>
+                <button type="submit" class="w-full bg-brand-primary text-white py-3 rounded-xl font-bold">حفظ الدورة</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- PAYMENT MODAL 1 -->
+    <div id="payment-info-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full relative shadow-2xl text-center">
+            <button onclick="closeModal('payment-info-modal')" class="absolute top-5 left-5 text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <div class="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-4 text-white font-black text-xs shadow-lg shadow-red-600/30 tracking-tighter">
+                Vodafone
+            </div>
+            <h3 class="text-2xl font-bold text-brand-dark dark:text-white mb-2">الدفع عبر فودافون كاش</h3>
+            <p class="text-xs text-slate-500 mb-6">يرجى تحويل المبلغ الموضح أدناه لشراء الكورس، ثم اضغط على "تم الدفع"</p>
+            
+            <div class="bg-slate-50 dark:bg-slate-700 p-4 rounded-2xl mb-6 space-y-2">
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-500 dark:text-slate-400">تكلفة الكورس:</span>
+                    <span id="pay-modal-price" class="font-bold text-brand-primary"></span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-500 dark:text-slate-400">رقم تحويل فودافون كاش:</span>
+                    <span id="pay-modal-number" class="font-black text-red-600 text-base"></span>
+                </div>
+            </div>
+
+            <button onclick="proceedToReceiptForm()" class="w-full bg-brand-primary text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition">
+                تم الدفع - رفع الإيصال
+            </button>
+        </div>
+    </div>
+
+    <!-- PAYMENT MODAL 2 -->
+    <div id="payment-receipt-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full relative shadow-2xl">
+            <button onclick="closeModal('payment-receipt-modal')" class="absolute top-5 left-5 text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="text-2xl font-bold text-brand-dark dark:text-white mb-4 text-center">إرسال إيصال التحويل</h3>
+            <form class="space-y-4" onsubmit="submitPaymentReceipt(event)">
+                <input type="hidden" id="receipt-course-id">
+                <div>
+                    <label class="block text-xs font-bold mb-1">اسم الطالب</label>
+                    <input type="text" id="receipt-student-name" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold mb-1">الرقم الذي تم التحويل منه</label>
+                    <input type="text" id="receipt-phone" placeholder="010XXXXXXXX" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold mb-1">صورة إيصال التحويل</label>
+                    <input type="file" id="receipt-file" accept="image/*" required class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-xs">
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 text-white py-3.5 rounded-xl font-bold hover:bg-emerald-700 transition">
+                    إرسال الإيصال للمعلم
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- VIEW RECEIPT MODAL -->
+    <div id="view-receipt-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 max-w-lg w-full relative shadow-2xl text-center">
+            <button onclick="closeModal('view-receipt-modal')" class="absolute top-5 left-5 text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="text-xl font-bold text-brand-dark dark:text-white mb-4">معاينة إيصال التحويل</h3>
+            <img id="receipt-img-preview" src="" class="w-full max-h-[70vh] object-contain rounded-2xl border border-slate-200 mb-4" alt="إيصال">
+        </div>
+    </div>
+
+    <!-- ADD LESSON MODAL -->
+    <div id="lesson-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full relative shadow-2xl">
+            <button onclick="closeLessonModal()" class="absolute top-5 left-5 text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="text-2xl font-bold text-brand-dark dark:text-white mb-1 text-center">إضافة حصة جديدة</h3>
+            <p id="lesson-limit-hint" class="text-xs text-center text-slate-500 dark:text-slate-400 mb-4"></p>
+            <form class="space-y-4" onsubmit="handleAddLesson(event)">
+                <input type="hidden" id="selected-course-id">
+                <div>
+                    <label class="block text-xs font-bold mb-1">عنوان الحصة</label>
+                    <input type="text" id="lesson-title" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold mb-1">نوع الحصة</label>
+                    <select id="lesson-type" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200">
+                        <option value="video">فيديو يوتيوب</option>
+                        <option value="live">بث مباشر</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold mb-1">رابط أو ID يوتيوب</label>
+                    <input type="text" id="lesson-url" placeholder="https://www.youtube.com/watch?v=XXXXX" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm">
+                </div>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">يمكنك إدخال رابط فيديو عادي أو رابط بث مباشر من يوتيوب.</p>
+                <button type="submit" class="w-full bg-brand-primary text-white py-3 rounded-xl font-bold">إضافة الحصة</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-brand-dark text-slate-400 border-t border-slate-800 py-12 mt-12">
+        <div class="max-w-7xl mx-auto px-4 grid md:grid-cols-4 gap-8">
+            <div>
+                <div class="logo-en text-2xl font-extrabold text-white tracking-tight mb-2">
+                    masar<span class="text-brand-primary">.</span>
+                    <span class="text-xs text-slate-400 block font-sans font-bold tracking-widest">مسار</span>
+                </div>
+                <p class="text-xs leading-relaxed text-slate-400">المنصة المتكاملة للتعليم الإلكتروني وبناء المستقبل التفاعلي.</p>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-3 text-sm">روابط سريعة</h4>
+                <ul class="space-y-2 text-xs">
+                    <li><button onclick="navigateTo('home')" class="hover:text-white transition">الرئيسية</button></li>
+                    <li><button onclick="navigateTo('courses')" class="hover:text-white transition">الكورسات</button></li>
+                    <li><button onclick="navigateTo('teachers')" class="hover:text-white transition">المعلمون</button></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-3 text-sm">للمعلمين</h4>
+                <ul class="space-y-2 text-xs">
+                    <li><button onclick="openRoleSelectionModal('register')" class="hover:text-white transition">انضم كمعلم</button></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="text-white font-bold mb-3 text-sm">تابعنا</h4>
+                <div class="flex gap-4 text-lg">
+                    <a href="#" class="hover:text-white transition"><i class="fa-brands fa-facebook"></i></a>
+                    <a href="#" class="hover:text-white transition"><i class="fa-brands fa-twitter"></i></a>
+                    <a href="#" class="hover:text-white transition"><i class="fa-brands fa-youtube"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 pt-8 mt-8 border-t border-slate-800 text-center text-xs">
+            جميع الحقوق محفوظة لمنصة <strong>masar | مسار</strong> &copy; 2026
+        </div>
+    </footer>
+
+    <!-- Firebase SDK Setup -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig1 = {
+          apiKey: "AIzaSyBRiobwgAb16d13kgCoy3r8t8zuNGrImPQ",
+          authDomain: "masar1-7121c.firebaseapp.com",
+          projectId: "masar1-7121c",
+          storageBucket: "masar1-7121c.firebasestorage.app",
+          messagingSenderId: "1014623132646",
+          appId: "1:1014623132646:web:b150e651b5b1548b081427"
+        };
+
+        const app = initializeApp(firebaseConfig1);
+        const db = getFirestore(app);
+
+        window.db = db;
+        window.fs = { collection, addDoc, getDocs, deleteDoc, doc, updateDoc, query, where, getDoc, setDoc, onSnapshot };
+        
+        window.initPlatformSystem();
+    </script>
+
+    <!-- Secure Application Engine -->
+    <script>
+        let authFlow = 'login'; 
+        let selectedRole = 'student'; 
+        let fsPlyrInstance = null;
+        let globalCoursesData = {};
+        let globalTeachersData = {};
+        let userSubscriptions = {}; 
+        let userCompletedLessons = {}; 
+        let selectedCourseForPay = null;
+        let currentActiveCourseId = null;
+        let activeUser = null;
+        let subscriptionsUnsubscribe = null;
+        
+        // Temp storage for signup flow
+        let tempTeacherRegisterData = null;
+        let selectedTeacherPlan = null;
+        let selectedTeacherPlanDetails = null;
+
+        function getRequestField(data, keys) {
+            for (const key of keys) {
+                if (data[key] !== undefined && data[key] !== null && data[key] !== '') {
+                    return data[key];
+                }
+            }
+            return null;
+        }
+
+        function getTeacherPlanLabel(planType) {
+            if (planType === 'Plan1') return 'الخطة الأساسية';
+            if (planType === 'Plan2') return 'الخطة الاحترافية';
+            if (planType === 'FreeTrial') return 'التجربة المجانية';
+            if (planType === 'TestPlan') return 'الخطة التجريبية';
+            return planType || 'غير محددة';
+        }
+
+        function getTeacherCycleLabel(cycle) {
+            if (cycle === 'monthly') return 'شهري';
+            if (cycle === 'yearly') return 'سنوي';
+            return 'غير محدد';
+        }
+
+        function formatPlanAmount(amount) {
+            return amount === 0 ? 'مجاني' : `${amount} ج.م`;
+        }
+
+        // بتظهر فور الضغط على "متابعة/إرسال" في أي فورم بيبعت للسيرفر، وتفضل ظاهرة لحد ما الطلب يخلص
+        function showLoadingOverlay(message) {
+            const modal = document.getElementById('loading-overlay-modal');
+            const text = document.getElementById('loading-overlay-text');
+            if (text) text.textContent = message || 'جاري إرسال طلبك...';
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        function hideLoadingOverlay() {
+            const modal = document.getElementById('loading-overlay-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function showAppAlert(title, message, type = 'info', onConfirm = null, showCancel = false) {
+            const modal = document.getElementById('custom-alert-modal');
+            const iconBox = document.getElementById('custom-alert-icon');
+            const titleEl = document.getElementById('custom-alert-title');
+            const msgEl = document.getElementById('custom-alert-message');
+            const okBtn = document.getElementById('custom-alert-ok-btn');
+            const cancelBtn = document.getElementById('custom-alert-cancel-btn');
+
+            titleEl.innerText = title;
+            msgEl.innerText = message;
+
+            if (type === 'error') {
+                iconBox.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl bg-rose-100 text-rose-500 dark:bg-rose-900/30 dark:text-rose-400';
+                iconBox.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i>';
+            } else if (type === 'success') {
+                iconBox.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl bg-emerald-100 text-emerald-500 dark:bg-emerald-900/30 dark:text-emerald-400';
+                iconBox.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+            } else if (type === 'confirm') {
+                iconBox.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl bg-amber-100 text-amber-500 dark:bg-amber-900/30 dark:text-amber-400';
+                iconBox.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            } else {
+                iconBox.className = 'w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl bg-indigo-100 text-brand-primary dark:bg-indigo-900/30 dark:text-indigo-400';
+                iconBox.innerHTML = '<i class="fa-solid fa-circle-info"></i>';
+            }
+
+            if (showCancel) {
+                cancelBtn.classList.remove('hidden');
+            } else {
+                cancelBtn.classList.add('hidden');
+            }
+
+            okBtn.onclick = () => {
+                closeModal('custom-alert-modal');
+                if (onConfirm) onConfirm();
+            };
+
+            cancelBtn.onclick = () => {
+                closeModal('custom-alert-modal');
+            };
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('settings-menu');
+            const wrapper = document.getElementById('settings-dropdown-wrapper');
+            if (wrapper && !wrapper.contains(event.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        function toggleSettingsMenu(event) {
+            if (event) event.stopPropagation();
+            document.getElementById('settings-menu').classList.toggle('hidden');
+        }
+
+        function confirmLogout() {
+            document.getElementById('settings-menu').classList.add('hidden');
+            showAppAlert(
+                'تسجيل الخروج',
+                'هل أنت تأكد من أنك تريد تسجيل الخروج من منصة مسار؟',
+                'confirm',
+                () => logout(),
+                true
+            );
+        }
+
+        function initPlatformSystem() {
+            checkPersistedUser();
+            initPromoPlayer();
+        }
+
+        function initPromoPlayer() {
+            const el = document.getElementById('promo-video-player');
+            if (el && window.Plyr) {
+                if (window.promoPlyrInstance) {
+                    window.promoPlyrInstance.destroy();
+                    window.promoPlyrInstance = null;
+                }
+
+                window.promoPlyrInstance = new Plyr(el, {
+                    controls: ['play-large', 'play', 'progress', 'mute', 'volume', 'fullscreen'],
+                    loop: { active: false },
+                    ratio: '16:9',
+                    clickToPlay: true
+                });
+            }
+        }
+
+        async function checkPersistedUser() {
+            const user = JSON.parse(localStorage.getItem('masar_user'));
+            if (user) {
+                // Verify against DB if the user still exists or was deleted
+                let exists = false;
+                if (window.db) {
+                    const colName = user.role === 'teacher' ? 'teachers' : (user.role === 'student' ? 'students' : null);
+                    if (colName) {
+                        const q = window.fs.query(window.fs.collection(window.db, colName), window.fs.where("email", "==", user.email));
+                        const snap = await window.fs.getDocs(q);
+                        if (!snap.empty) {
+                            exists = true;
+                            // Update user object if updated in DB
+                            const latestData = snap.docs[0].data();
+                            latestData.id = snap.docs[0].id;
+                            localStorage.setItem('masar_user', JSON.stringify(latestData));
+                            activeUser = latestData;
+                        }
+                    } else if (user.role === 'owner') {
+                        exists = true;
+                        activeUser = user;
+                    }
+                }
+
+                if (exists) {
+                    applyUserSession(activeUser || user);
+                } else {
+                    // Deleted account locally removed
+                    localStorage.removeItem('masar_user');
+                    activeUser = null;
+                    loadPlatformData();
+                }
+            } else {
+                loadPlatformData();
+            }
+        }
+
+        async function applyUserSession(user) {
+            activeUser = user;
+            document.getElementById('guest-actions').classList.add('hidden');
+            document.getElementById('user-info').classList.remove('hidden');
+            document.getElementById('user-info').classList.add('flex');
+            document.getElementById('user-display-name').innerText = user.name;
+            document.getElementById('logout-btn-box').classList.remove('hidden');
+
+            const avatarContainer = document.getElementById('user-avatar-container');
+            if (user.avatar) {
+                avatarContainer.innerHTML = `<img src="${user.avatar}" class="w-full h-full object-cover">`;
+            } else {
+                avatarContainer.innerHTML = user.name ? user.name[0] : '<i class="fa-solid fa-user"></i>';
+            }
+
+            if (user.role === 'teacher' && user.status === 'pending' && window.db) {
+                const q = window.fs.query(window.fs.collection(window.db, "teachers"), window.fs.where("email", "==", user.email));
+                const querySnap = await window.fs.getDocs(q);
+                querySnap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if (data.status === 'approved') {
+                        user.status = 'approved';
+                        if (data.avatar) user.avatar = data.avatar;
+                        activeUser = user;
+                        localStorage.setItem('masar_user', JSON.stringify(user));
+                    }
+                });
+            }
+
+            if (user.role === 'owner') {
+                document.getElementById('nav-owner-dash').classList.remove('hidden');
+                document.getElementById('pending-alert-banner').classList.add('hidden');
+            } else if (user.role === 'teacher') {
+                if (user.status === 'approved') {
+                    document.getElementById('nav-teacher-dash').classList.remove('hidden');
+                    document.getElementById('nav-teacher-dash').classList.add('flex');
+                    document.getElementById('pending-alert-banner').classList.add('hidden');
+                } else {
+                    document.getElementById('nav-teacher-dash').classList.add('hidden');
+                    document.getElementById('pending-alert-banner').classList.remove('hidden');
+                }
+            } else {
+                document.getElementById('pending-alert-banner').classList.add('hidden');
+            }
+
+            syncMobileTeacherNavButton();
+            subscribeToStudentSubscriptions(user.email);
+            fetchStudentProgressCloud(user.email);
+        }
+
+        function logout() {
+            if (subscriptionsUnsubscribe) subscriptionsUnsubscribe();
+            localStorage.removeItem('masar_user');
+            window.location.reload();
+        }
+
+        function navigateTo(targetId) {
+            document.querySelectorAll('.page-view').forEach(p => p.classList.remove('active'));
+            const activePage = document.getElementById(`view-${targetId}`);
+            if (activePage) activePage.classList.add('active');
+            document.querySelectorAll('.nav-button, .mobile-nav-button').forEach(btn => {
+                const target = btn.dataset.target;
+                btn.classList.toggle('active', target === targetId);
+            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function syncMobileTeacherNavButton() {
+            const button = document.getElementById('mobile-teacher-or-about-btn');
+            const icon = document.getElementById('mobile-teacher-or-about-icon');
+            const label = document.getElementById('mobile-teacher-or-about-text');
+            if (!button || !icon || !label) return;
+
+            const isTeacherAccessAvailable = !!(activeUser && activeUser.role === 'teacher' && activeUser.status === 'approved');
+
+            if (isTeacherAccessAvailable) {
+                button.dataset.target = 'teacher-dash';
+                icon.textContent = 'dashboard';
+                label.textContent = 'لوحة المعلم';
+                button.classList.add('text-brand-primary');
+                button.classList.remove('text-slate-700', 'dark:text-slate-100');
+            } else {
+                button.dataset.target = 'about';
+                icon.textContent = 'info';
+                label.textContent = 'عن مسار';
+                button.classList.remove('text-brand-primary');
+                button.classList.add('text-slate-700', 'dark:text-slate-100');
+            }
+        }
+
+        function handleMobileTeacherNav() {
+            if (activeUser && activeUser.role === 'teacher' && activeUser.status === 'approved') {
+                checkTeacherAccess();
+            } else {
+                navigateTo('about');
+            }
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if(el) {
+                el.classList.add('hidden');
+                el.classList.remove('flex');
+            }
+        }
+
+        function openRoleSelectionModal(flowType) {
+            authFlow = flowType;
+            document.getElementById('role-modal-title').innerText = flowType === 'login' ? 'تسجيل الدخول كـ' : 'إنشاء حساب كـ';
+            const modal = document.getElementById('role-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function selectRole(role) {
+            selectedRole = role;
+            closeModal('role-modal');
+            openAuthFormModal();
+        }
+
+        function openAuthFormModal() {
+            const modal = document.getElementById('auth-modal');
+            const title = document.getElementById('modal-title');
+            const specBox = document.getElementById('teacher-spec-box');
+            const avatarBox = document.getElementById('teacher-avatar-box');
+            const nameBox = document.getElementById('auth-name-box');
+
+            if (authFlow === 'login') {
+                title.innerText = selectedRole === 'teacher' ? 'تسجيل دخول معلم' : 'تسجيل دخول طالب';
+                specBox.classList.add('hidden');
+                avatarBox.classList.add('hidden');
+                nameBox.classList.add('hidden');
+            } else {
+                title.innerText = selectedRole === 'teacher' ? 'بيانات معلم جديد' : 'إنشاء حساب طالب جديد';
+                nameBox.classList.remove('hidden');
+                if (selectedRole === 'teacher') {
+                    specBox.classList.remove('hidden');
+                    avatarBox.classList.remove('hidden');
+                } else {
+                    specBox.classList.add('hidden');
+                    avatarBox.classList.add('hidden');
+                }
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeAuthModal() {
+            closeModal('auth-modal');
+        }
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value.trim().toLowerCase();
+            const password = document.getElementById('auth-password').value;
+            const name = document.getElementById('auth-name').value;
+            const spec = document.getElementById('auth-spec').value || 'عام';
+            const avatarFile = document.getElementById('auth-teacher-avatar').files[0];
+
+            if (!password || password.length < 4) {
+                showAppAlert('تنبيه', 'يرجى إدخال كلمة مرور مكونة من 4 خانات على الأقل', 'error');
+                return;
+            }
+
+            if (email === 'owner@masar.com') {
+                const ownerUser = { name: 'المنشئ (Owner)', email, role: 'owner', status: 'approved' };
+                localStorage.setItem('masar_user', JSON.stringify(ownerUser));
+                applyUserSession(ownerUser);
+                closeAuthModal();
+                navigateTo('owner-dash');
+                return;
+            }
+
+            showLoadingOverlay(authFlow === 'login' ? 'جاري تسجيل الدخول...' : 'جاري إنشاء الحساب...');
+            try {
+            if (authFlow === 'login') {
+                if (selectedRole === 'teacher') {
+                    const qTeacher = window.fs.query(window.fs.collection(window.db, "teachers"), window.fs.where("email", "==", email));
+                    const snapTeacher = await window.fs.getDocs(qTeacher);
+                    if (!snapTeacher.empty) {
+                        let teacherData = snapTeacher.docs[0].data();
+                        teacherData.id = snapTeacher.docs[0].id;
+                        if (teacherData.password && teacherData.password !== password) {
+                            showAppAlert('خطأ في البيانات', 'كلمة المرور غير صحيحة!', 'error');
+                            return;
+                        }
+                        localStorage.setItem('masar_user', JSON.stringify(teacherData));
+                        applyUserSession(teacherData);
+                        closeAuthModal();
+                    } else {
+                        const qStudent = window.fs.query(window.fs.collection(window.db, "students"), window.fs.where("email", "==", email));
+                        const snapStudent = await window.fs.getDocs(qStudent);
+                        if (!snapStudent.empty) {
+                            showAppAlert('تنبيه الحساب', 'هذا الحساب ليس لمعلم! الحساب مسجل كـ (طالب).', 'error');
+                        } else {
+                            showAppAlert('غير موجود', 'لم يتم العثور على هذا الحساب كـ معلم.', 'error');
+                        }
+                    }
+                } else {
+                    const qStudent = window.fs.query(window.fs.collection(window.db, "students"), window.fs.where("email", "==", email));
+                    const snapStudent = await window.fs.getDocs(qStudent);
+                    if (!snapStudent.empty) {
+                        let studentData = snapStudent.docs[0].data();
+                        if (studentData.password && studentData.password !== password) {
+                            showAppAlert('خطأ في البيانات', 'كلمة المرور غير صحيحة!', 'error');
+                            return;
+                        }
+                        localStorage.setItem('masar_user', JSON.stringify(studentData));
+                        applyUserSession(studentData);
+                        closeAuthModal();
+                    } else {
+                        const qTeacher = window.fs.query(window.fs.collection(window.db, "teachers"), window.fs.where("email", "==", email));
+                        const snapTeacher = await window.fs.getDocs(qTeacher);
+                        if (!snapTeacher.empty) {
+                            showAppAlert('تنبيه الحساب', 'هذا الحساب ليس لطالب! الحساب مسجل كـ (معلم).', 'error');
+                        } else {
+                            showAppAlert('غير موجود', 'لم يتم العثور على هذا الحساب كـ طالب.', 'error');
+                        }
+                    }
+                }
+            } else { // Registration flow
+                if (!name) {
+                    showAppAlert('بيانات ناقصة', 'يرجى كتابة الاسم الكامل', 'error');
+                    return;
+                }
+
+                let avatarBase64 = '';
+                if (avatarFile) {
+                    avatarBase64 = await processImageToBase64(avatarFile, 300);
+                }
+
+                if (selectedRole === 'teacher') {
+                    // Check if teacher used free trial previously
+                    let hasUsedFreeTrial = false;
+                    const qTrial = window.fs.query(window.fs.collection(window.db, "teacher_plan_requests"), window.fs.where("teacherEmail", "==", email), window.fs.where("planType", "==", "FreeTrial"));
+                    const snapTrial = await window.fs.getDocs(qTrial);
+                    if (!snapTrial.empty) {
+                        hasUsedFreeTrial = true;
+                    }
+
+                    tempTeacherRegisterData = { name, email, password, spec, avatar: avatarBase64, role: 'teacher', status: 'pending' };
+
+                    // Toggle visibility of Free Trial Plan based on history
+                    const freeTrialCard = document.getElementById('free-trial-card');
+                    if (freeTrialCard) {
+                        if (hasUsedFreeTrial) freeTrialCard.style.display = 'none';
+                        else freeTrialCard.style.display = 'flex';
+                    }
+
+                    closeAuthModal();
+                    // Open Plans Selection Modal
+                    const plansModal = document.getElementById('teacher-plans-modal');
+                    updatePlanPrice('plan1');
+                    updatePlanPrice('plan2');
+                    plansModal.classList.remove('hidden');
+                    plansModal.classList.add('flex');
+                } else {
+                    const studentData = { name, email, password, role: 'student', status: 'approved' };
+                    if (window.db) {
+                        await window.fs.addDoc(window.fs.collection(window.db, "students"), studentData);
+                    }
+                    localStorage.setItem('masar_user', JSON.stringify(studentData));
+                    applyUserSession(studentData);
+                    showAppAlert('أهلاً بك', 'تم إنشاء حساب الطالب بنجاح!', 'success');
+                    closeAuthModal();
+                }
+            }
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        function updatePlanPrice(planKey) {
+            const cycle = document.getElementById(`${planKey}-cycle`).value;
+            const priceDisplay = document.getElementById(`${planKey}-price-display`);
+            const periodDisplay = document.getElementById(`${planKey}-period-display`);
+
+            const config = planKey === 'plan1'
+                ? { monthly: 300, yearly: 1500, monthlyLabel: 'ج.م / شهرياً', yearlyLabel: 'ج.م / سنوياً' }
+                : { monthly: 500, yearly: 2100, monthlyLabel: 'ج.م / شهرياً', yearlyLabel: 'ج.م / سنوياً' };
+
+            const amount = cycle === 'monthly' ? config.monthly : config.yearly;
+            const periodLabel = cycle === 'monthly' ? config.monthlyLabel : config.yearlyLabel;
+
+            if (priceDisplay) {
+                priceDisplay.textContent = amount;
+            }
+            if (periodDisplay) {
+                periodDisplay.textContent = periodLabel;
+            }
+        }
+
+        function selectTeacherPlan(planType) {
+            selectedTeacherPlan = planType;
+            let amount = 0;
+            let cycle = 'none';
+
+            if (planType === 'Plan1') {
+                cycle = document.getElementById('plan1-cycle').value;
+                amount = cycle === 'monthly' ? 300 : 1500;
+            } else if (planType === 'Plan2') {
+                cycle = document.getElementById('plan2-cycle').value;
+                amount = cycle === 'monthly' ? 500 : 2100;
+            } else if (planType === 'FreeTrial') {
+                amount = 0;
+            } else if (planType === 'TestPlan') {
+                amount = 0;
+            }
+
+            selectedTeacherPlanDetails = { planType, amount, cycle };
+
+            closeModal('teacher-plans-modal');
+
+            if (planType === 'FreeTrial' || planType === 'TestPlan') {
+                // Direct registration for free/test plans
+                finalizeTeacherRegistration('', selectedTeacherPlanDetails);
+            } else {
+                // Show Vodafone Cash Modal with custom logo and price
+                document.getElementById('teacher-pay-amount').innerText = `${amount} ج.م (${cycle === 'monthly' ? 'شهري' : 'سنوي'})`;
+                const payModal = document.getElementById('teacher-payment-modal');
+                payModal.classList.remove('hidden');
+                payModal.classList.add('flex');
+            }
+        }
+
+        async function submitTeacherSubscription(e) {
+            e.preventDefault();
+            showLoadingOverlay('جاري رفع الإيصال...');
+            const file = document.getElementById('teacher-receipt-file').files[0];
+            let receiptBase64 = '';
+            if (file) {
+                receiptBase64 = await processImageToBase64(file, 600);
+            }
+            closeModal('teacher-payment-modal');
+            finalizeTeacherRegistration(receiptBase64, selectedTeacherPlanDetails);
+        }
+
+        async function finalizeTeacherRegistration(receiptImage, planDetails) {
+            const regData = tempTeacherRegisterData || (activeUser ? { ...activeUser } : null);
+            if (!regData || !planDetails) return;
+
+            showLoadingOverlay('جاري إرسال طلب الاشتراك...');
+            try {
+
+            // 1. حساب تاريخ انتهاء الخطة
+            let expireAt = new Date();
+            if (planDetails.planType === 'TestPlan') {
+                expireAt = new Date(Date.now() + 60 * 1000); // دقيقة واحدة للاختبار
+            } else if (planDetails.planType === 'FreeTrial') {
+                expireAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // أسبوع
+            } else if (planDetails.cycle === 'monthly') {
+                expireAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 يوم
+            } else if (planDetails.cycle === 'yearly') {
+                expireAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // سنة
+            }
+
+            const isReSubscribing = activeUser && activeUser.role === 'teacher';
+            const planLabel = getTeacherPlanLabel(planDetails.planType);
+            const cycleLabel = getTeacherPlanLabel(planDetails.planType) === 'التجربة المجانية' || getTeacherPlanLabel(planDetails.planType) === 'الخطة التجريبية'
+                ? 'مجانية'
+                : (planDetails.cycle === 'yearly' ? 'سنوي' : 'شهري');
+
+            const requestPayload = {
+                teacherName: regData.name || activeUser?.name || 'غير معروف',
+                teacherEmail: regData.email || activeUser?.email || 'غير معروف',
+                teacherPassword: regData.password || activeUser?.password || '',
+                planType: planDetails.planType,
+                planLabel,
+                cycle: planDetails.cycle || 'monthly',
+                cycleLabel,
+                amount: planDetails.amount || 0,
+                amountLabel: formatPlanAmount(planDetails.amount || 0),
+                receiptImage: receiptImage || '',
+                receiptUploaded: Boolean(receiptImage),
+                expireAt: expireAt.toISOString(),
+                createdAt: new Date().toISOString(),
+                status: 'pending',
+                isRenewal: Boolean(isReSubscribing)
+            };
+
+            if (window.db) {
+                await window.fs.addDoc(window.fs.collection(window.db, "teacher_plan_requests"), requestPayload);
+
+                if (!isReSubscribing) {
+                    const docRef = await window.fs.addDoc(window.fs.collection(window.db, "teachers"), {
+                        ...regData,
+                        planExpireAt: expireAt.toISOString(),
+                        currentPlan: planDetails.planType,
+                        status: 'pending'
+                    });
+                    regData.id = docRef.id;
+                } else {
+                    const q = window.fs.query(window.fs.collection(window.db, "teachers"), window.fs.where("email", "==", regData.email));
+                    const snap = await window.fs.getDocs(q);
+                    for (const docSnap of snap.docs) {
+                        await window.fs.updateDoc(window.fs.doc(window.db, "teachers", docSnap.id), {
+                            planExpireAt: expireAt.toISOString(),
+                            currentPlan: planDetails.planType
+                        });
+                    }
+                }
+            }
+
+            regData.planExpireAt = expireAt.toISOString();
+            regData.currentPlan = planDetails.planType;
+            localStorage.setItem('masar_user', JSON.stringify(regData));
+            applyUserSession(regData);
+
+            hideLoadingOverlay();
+            if (isReSubscribing) {
+                showAppAlert('تم إرسال طلب التجديد', 'يمكنك الاستمرار في العمل بشكل عادي. تلقى المنشئ إيصالك للمراجعة.', 'success');
+            } else {
+                showAppAlert('تم الإرسال بنجاح', 'تم إرسال طلب الاشتراك كمعلم للمنشئ وبانتظار الموافقة.', 'success');
+            }
+            loadPlatformData();
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+        // Check subscription period before opening teacher dashboard
+        function checkTeacherAccess() {
+            if (!activeUser || activeUser.role !== 'teacher') return;
+
+            if (activeUser.planExpireAt) {
+                const now = new Date();
+                const exp = new Date(activeUser.planExpireAt);
+                if (now > exp) {
+                    showAppAlert('انتهى الاشتراك', 'لقد انتهت فترة اشتراك لوحة التحكم الخاصة بك. يرجى اختيار اشتراك جديد للتجديد.', 'error', () => {
+                        // Open plans selection for re-subscription
+                        const plansModal = document.getElementById('teacher-plans-modal');
+                        plansModal.classList.remove('hidden');
+                        plansModal.classList.add('flex');
+                    });
+                    return;
+                }
+            }
+            navigateTo('teacher-dash');
+        }
+
+        function openEditTeacherProfileModal() {
+            if (!activeUser || activeUser.role !== 'teacher') return;
+            document.getElementById('edit-teacher-spec').value = activeUser.spec || '';
+            const preview = document.getElementById('edit-avatar-preview');
+            if (activeUser.avatar) {
+                preview.innerHTML = `<img src="${activeUser.avatar}" class="w-full h-full object-cover">`;
+            } else {
+                preview.innerHTML = activeUser.name[0];
+            }
+            const modal = document.getElementById('edit-teacher-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        async function handleUpdateTeacherProfile(e) {
+            e.preventDefault();
+            const newSpec = document.getElementById('edit-teacher-spec').value;
+            const avatarFile = document.getElementById('edit-teacher-avatar').files[0];
+
+            showLoadingOverlay('جاري حفظ التعديلات...');
+            try {
+                let newAvatar = activeUser.avatar || '';
+                if (avatarFile) {
+                    newAvatar = await processImageToBase64(avatarFile, 300);
+                }
+
+                activeUser.spec = newSpec;
+                activeUser.avatar = newAvatar;
+                localStorage.setItem('masar_user', JSON.stringify(activeUser));
+
+                if (window.db && activeUser.email) {
+                    const q = window.fs.query(window.fs.collection(window.db, "teachers"), window.fs.where("email", "==", activeUser.email));
+                    const snap = await window.fs.getDocs(q);
+                    snap.forEach(async docSnap => {
+                        await window.fs.updateDoc(window.fs.doc(window.db, "teachers", docSnap.id), {
+                            spec: newSpec,
+                            avatar: newAvatar
+                        });
+                    });
+                }
+
+                applyUserSession(activeUser);
+                closeModal('edit-teacher-modal');
+                hideLoadingOverlay();
+                showAppAlert('تم التحديث', 'تم تحديث البيانات والصورة الشخصية بنجاح!', 'success');
+                loadPlatformData();
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        function filterCourses(searchTerm) {
+            const query = searchTerm.trim().toLowerCase();
+            const cards = document.querySelectorAll('#all-courses-list .interactive-card');
+            cards.forEach(card => {
+                const title = card.getAttribute('data-title') || '';
+                const teacher = card.getAttribute('data-teacher') || '';
+                const subject = card.getAttribute('data-subject') || '';
+                
+                if (title.includes(query) || teacher.includes(query) || subject.includes(query)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function showErrorMessage(message) {
+            const stage = document.getElementById('yt-player-target');
+            if (stage) {
+                stage.innerHTML = `
+                    <div class="w-full h-full flex flex-col items-center justify-center bg-slate-900">
+                        <div class="text-white text-center px-4">
+                            <i class="fa-solid fa-circle-exclamation text-4xl mb-4"></i>
+                            <p class="text-lg font-bold">${message}</p>
+                            <p class="text-xs text-slate-400 mt-3">تحقق من رابط الفيديو والمحاولة مرة أخرى</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+    let player = null;
+let ytTimer = null;
+let pauseIconTimer = null;
+let controlsHideTimeout = null;
+let centerIconHideTimeout = null;
+let clickTimeout = null;
+let currentSpeed = 1;
+let currentQuality = 'auto';
+let currentLessonType = 'video'; // Track if current lesson is live or video
+let lastLiveEdgeTime = 0;
+
+// Extraction helper for YouTube ID - supports all YouTube URL formats
+function extractYouTubeId(url) {
+    if (!url) return "";
+    
+    // Remove whitespace
+    url = url.trim();
+    
+    // Check if it's a direct video ID (11 alphanumeric characters)
+    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) {
+        return url;
+    }
+    
+    // Handle various YouTube URL formats
+    const patterns = [
+        /youtube\.com\/watch\?.*v=([a-zA-Z0-9_-]{11})/, // www.youtube.com/watch?v=ID
+        /youtube\.com\/live\/([a-zA-Z0-9_-]{11})/, // www.youtube.com/live/ID
+        /youtu\.be\/([a-zA-Z0-9_-]{11})/, // youtu.be/ID
+        /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/, // youtube.com/embed/ID
+        /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/, // youtube.com/v/ID
+    ];
+    
+    for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match && match[1] && match[1].length === 11) {
+            return match[1];
+        }
+    }
+    
+    return "";
+}
+
+// Ensure YouTube API is loaded
+function ensureYouTubeApi(callback) {
+    if (window.YT && window.YT.Player) {
+        callback();
+        return;
+    }
+    if (!document.getElementById("yt-iframe-api")) {
+        const script = document.createElement("script");
+        script.id = "yt-iframe-api";
+        script.src = "https://www.youtube.com/iframe_api";
+        script.async = true;
+        document.body.appendChild(script);
+    }
+    const previousReady = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = function () {
+        if (previousReady) previousReady();
+        callback();
+    };
+}
+
+// Function to Open the Custom Player Modal
+window.openCustomPlayer = function(videoUrl, lessonTitle, lessonType = 'video') {
+    currentLessonType = lessonType; // Store lesson type globally
+    lastLiveEdgeTime = 0;
+    
+    const modal = document.getElementById('fullscreen-player-modal');
+    const titleElem = document.getElementById('fs-lesson-title');
+
+    if (titleElem) titleElem.textContent = lessonTitle || "عرض الحصة";
+
+    // Cleanup previous player
+    if (fsPlyrInstance) {
+        fsPlyrInstance.destroy();
+        fsPlyrInstance = null;
+    }
+    const fsContainer = document.getElementById('fs-player-container');
+    if (fsContainer) fsContainer.innerHTML = '';
+
+    if (player && typeof player.destroy === 'function') {
+        try {
+            player.destroy();
+        } catch (e) {
+            console.log('Player destroy error (expected for some cases):', e);
+        }
+        player = null;
+    }
+    if (ytTimer) {
+        clearInterval(ytTimer);
+        ytTimer = null;
+    }
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    document.body.style.overflow = 'hidden';
+
+    const stage = document.getElementById('yt-player-target');
+    stage.innerHTML = '';
+    stage.classList.remove('pointer-events-none');
+
+    // Extract and validate video ID
+    const videoId = extractYouTubeId(videoUrl);
+    const isYouTubeUrl = videoUrl && (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be'));
+
+    console.log('=== Player Init ===' );
+    console.log('Lesson Type:', lessonType);
+    console.log('Video URL:', videoUrl);
+    console.log('Extracted ID:', videoId);
+    console.log('Is YouTube URL:', isYouTubeUrl);
+
+    // Handle YouTube URLs
+    if (isYouTubeUrl && videoId) {
+        console.log('Loading YouTube player...');
+        
+        stage.innerHTML = `<div id="yt-player-instance" class="w-full h-full"></div>`;
+        
+        ensureYouTubeApi(() => {
+            try {
+                player = new YT.Player('yt-player-instance', {
+                    videoId: videoId,
+                    width: '100%',
+                    height: '100%',
+                    playerVars: {
+                        autoplay: 1,
+                        rel: 0,
+                        modestbranding: 1,
+                        controls: 0,
+                        fs: 0,
+                        playsinline: 1,
+                        enablejsapi: 1,
+                        disablekb: 1
+                    },
+                    events: {
+                        onReady: (event) => {
+                            console.log('YouTube Player Ready');
+                            event.target.playVideo();
+                            syncPlayState();
+                            if (ytTimer) clearInterval(ytTimer);
+                            // Enable progress sync for all videos and live streams
+                            ytTimer = setInterval(syncProgress, 500);
+                            resetControlsTimer();
+                            updateControlsForLive(lessonType === 'live');
+                        },
+                        onStateChange: (event) => {
+                            console.log('YouTube State Changed:', event.data);
+                            handleStateChange(event.data);
+                        },
+                        onError: (event) => {
+                            const errorCode = event.data;
+                            console.error('YouTube Player Error Code:', errorCode);
+                            
+                            let errorMessage = 'حدث خطأ في تشغيل الفيديو';
+                            if (errorCode === 2) {
+                                errorMessage = 'الرابط غير صحيح';
+                            } else if (errorCode === 5) {
+                                errorMessage = 'خطأ في تحميل API';
+                            } else if (errorCode === 100) {
+                                errorMessage = 'الفيديو غير موجود أو تم حذفه';
+                            } else if (errorCode === 101 || errorCode === 150) {
+                                errorMessage = 'لا يمكن تضمين هذا الفيديو';
+                            }
+                            
+                            showErrorMessage(`${errorMessage} (رمز: ${errorCode})`);
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error creating YouTube player:', error);
+                showErrorMessage('فشل في إنشاء المشغل. حاول مرة أخرى.');
+            }
+        });
+
+        initPlayerControls();
+        showControls();
+    } else if (videoUrl) {
+        // Fallback for non-YouTube URLs (direct streaming)
+        console.log('Using HTML5 video player for non-YouTube URL');
+        
+        stage.innerHTML = `
+            <div class="w-full h-full flex flex-col bg-slate-900">
+                <video id="html5-video-player" class="w-full h-full" controls autoplay playsinline>
+                    <source src="${videoUrl}" type="application/x-mpegURL">
+                    <source src="${videoUrl}" type="video/mp4">
+                    <source src="${videoUrl}" type="video/webm">
+                    متصفحك لا يدعم تشغيل هذا الرابط. يرجى استخدام متصفح حديث.
+                </video>
+            </div>
+        `;
+        syncPlayState();
+        resetControlsTimer();
+    } else {
+        console.error('Invalid video URL:', videoUrl);
+        showErrorMessage('رابط الفيديو غير صحيح. تحقق من الرابط وحاول مرة أخرى.');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.style.overflow = 'auto';
+        return;
+    }
+
+    const centerIcon = document.getElementById('custom-center-play');
+    if (centerIcon) {
+        centerIcon.classList.add('opacity-0', 'scale-90');
+        centerIcon.classList.remove('opacity-100', 'scale-100');
+    }
+    syncFullscreenButtonIcon();
+};
+
+function isFiniteNumber(value) {
+    return typeof value === 'number' && Number.isFinite(value);
+}
+
+function getTimelineState() {
+    const isLive = currentLessonType === 'live';
+    const currentTime = player && typeof player.getCurrentTime === 'function' ? player.getCurrentTime() : null;
+    const durationValue = player && typeof player.getDuration === 'function' ? player.getDuration() : null;
+    const safeCurrentTime = isFiniteNumber(currentTime) ? currentTime : 0;
+    const safeDuration = isFiniteNumber(durationValue) && durationValue > 0 ? durationValue : null;
+
+    if (isLive) {
+        if (safeDuration !== null) {
+            const windowDuration = safeDuration;
+            const windowStart = Math.max(0, safeCurrentTime - windowDuration);
+            const windowEnd = safeCurrentTime;
+            const relativeCurrent = Math.max(0, safeCurrentTime - windowStart);
+            const value = windowDuration > 0 ? (relativeCurrent / windowDuration) * 100 : 0;
+            return {
+                isLive: true,
+                canSeek: true,
+                windowStart,
+                windowEnd,
+                windowDuration,
+                currentValue: safeCurrentTime,
+                relativeCurrent,
+                sliderValue: Math.min(100, Math.max(0, value)),
+                currentText: formatTime(relativeCurrent),
+                durationText: formatTime(windowDuration)
+            };
+        }
+
+        return {
+            isLive: true,
+            canSeek: false,
+            windowStart: null,
+            windowEnd: null,
+            windowDuration: null,
+            currentValue: safeCurrentTime,
+            relativeCurrent: safeCurrentTime,
+            sliderValue: 100,
+            currentText: formatTime(safeCurrentTime),
+            durationText: 'LIVE'
+        };
+    }
+
+    if (safeDuration !== null) {
+        const value = safeDuration > 0 ? (safeCurrentTime / safeDuration) * 100 : 0;
+        return {
+            isLive: false,
+            canSeek: true,
+            windowStart: 0,
+            windowEnd: safeDuration,
+            windowDuration: safeDuration,
+            currentValue: safeCurrentTime,
+            relativeCurrent: safeCurrentTime,
+            sliderValue: Math.min(100, Math.max(0, value)),
+            currentText: formatTime(safeCurrentTime),
+            durationText: formatTime(safeDuration)
+        };
+    }
+
+    return {
+        isLive: false,
+        canSeek: false,
+        windowStart: 0,
+        windowEnd: null,
+        windowDuration: null,
+        currentValue: safeCurrentTime,
+        relativeCurrent: safeCurrentTime,
+        sliderValue: 0,
+        currentText: formatTime(safeCurrentTime),
+        durationText: '—'
+    };
+}
+
+function updateControlsForLive(isLive) {
+    const backBtn = document.getElementById('btn-back10');
+    const forwardBtn = document.getElementById('btn-forward10');
+    const slider = document.getElementById('progress-slider');
+    const timeCurrent = document.getElementById('time-current');
+    const timeDuration = document.getElementById('time-duration');
+    const liveBadge = document.getElementById('live-indicator');
+    const liveNowBtn = document.getElementById('btn-live-now');
+    const state = getTimelineState();
+
+    if (isLive) {
+        if (backBtn) {
+            backBtn.style.display = '';
+            backBtn.disabled = !state.canSeek;
+            backBtn.classList.toggle('opacity-50', !state.canSeek);
+        }
+        if (forwardBtn) {
+            forwardBtn.style.display = '';
+            forwardBtn.disabled = !state.canSeek;
+            forwardBtn.classList.toggle('opacity-50', !state.canSeek);
+        }
+        if (slider) {
+            slider.style.display = '';
+            slider.disabled = !state.canSeek;
+            slider.style.pointerEvents = state.canSeek ? 'auto' : 'none';
+            slider.style.opacity = state.canSeek ? '1' : '0.65';
+        }
+        if (liveBadge) {
+            liveBadge.classList.remove('hidden');
+        }
+        if (liveNowBtn) {
+            const shouldShow = state.isLive && state.canSeek && lastLiveEdgeTime > 0 && state.currentValue < lastLiveEdgeTime;
+            liveNowBtn.classList.toggle('hidden', !shouldShow);
+        }
+    } else {
+        if (backBtn) {
+            backBtn.style.display = '';
+            backBtn.disabled = false;
+            backBtn.classList.remove('opacity-50');
+        }
+        if (forwardBtn) {
+            forwardBtn.style.display = '';
+            forwardBtn.disabled = false;
+            forwardBtn.classList.remove('opacity-50');
+        }
+        if (slider) {
+            slider.style.display = '';
+            slider.disabled = false;
+            slider.style.pointerEvents = 'auto';
+            slider.style.opacity = '1';
+        }
+        if (liveBadge) {
+            liveBadge.classList.add('hidden');
+        }
+        if (liveNowBtn) {
+            liveNowBtn.classList.add('hidden');
+        }
+    }
+
+    if (timeCurrent) timeCurrent.textContent = state.currentText;
+    if (timeDuration) timeDuration.textContent = state.durationText;
+}
+
+function initPlayerControls() {
+    if (window.__masarPlayerControlsBound) return;
+    window.__masarPlayerControlsBound = true;
+
+    const stageContainer = document.getElementById('video-stage-container');
+    const clickArea = document.getElementById('video-click-area');
+    const playBtn = document.getElementById('btn-play-toggle');
+    const backBtn = document.getElementById('btn-back10');
+    const forwardBtn = document.getElementById('btn-forward10');
+    const muteBtn = document.getElementById('btn-mute-toggle');
+    const fsBtn = document.getElementById('btn-fullscreen-toggle');
+    const slider = document.getElementById('progress-slider');
+    const settingsBtn = document.getElementById('btn-settings-toggle');
+    const settingsMenu = document.getElementById('settings-popup-menu');
+    const controlBar = document.getElementById('video-control-bar');
+    const playerModal = document.getElementById('fullscreen-player-modal');
+
+    const onPlayerActivity = () => showControls();
+    const liveNowBtn = document.getElementById('btn-live-now');
+
+    // Cover the whole player screen (stage, control bar, popups, modal chrome) with both
+    // mouse and touch events so the show/auto-hide behavior is identical on every device.
+    [stageContainer, controlBar, playerModal, clickArea].forEach((el) => {
+        if (!el) return;
+        el.addEventListener('mousemove', onPlayerActivity);
+        el.addEventListener('mousedown', onPlayerActivity);
+        el.addEventListener('touchstart', onPlayerActivity, { passive: true });
+        el.addEventListener('touchmove', onPlayerActivity, { passive: true });
+        el.addEventListener('pointerdown', onPlayerActivity);
+        el.addEventListener('pointermove', onPlayerActivity);
+        el.addEventListener('keydown', onPlayerActivity);
+    });
+
+    document.addEventListener('fullscreenchange', syncFullscreenButtonIcon);
+
+    const handleVideoClick = (e) => {
+        onPlayerActivity();
+        const rect = clickArea.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        if (clickTimeout) {
+            clearTimeout(clickTimeout);
+            clickTimeout = null;
+            if (clickX > rect.width / 2) seekRelative(10);
+            else seekRelative(-10);
+        } else {
+            clickTimeout = setTimeout(() => {
+                clickTimeout = null;
+                togglePlayPause();
+            }, 260);
+        }
+    };
+
+    clickArea.onclick = handleVideoClick;
+
+    playBtn.onclick = () => { onPlayerActivity(); togglePlayPause(); };
+    backBtn.onclick = () => { onPlayerActivity(); const state = getTimelineState(); if (currentLessonType !== 'live' || state.canSeek) seekRelative(-10); };
+    forwardBtn.onclick = () => { onPlayerActivity(); const state = getTimelineState(); if (currentLessonType !== 'live' || state.canSeek) seekRelative(10); };
+    if (liveNowBtn) {
+        liveNowBtn.onclick = () => {
+            onPlayerActivity();
+            if (!player || typeof player.seekTo !== 'function') return;
+            const target = lastLiveEdgeTime > 0 ? lastLiveEdgeTime : (player.getCurrentTime ? player.getCurrentTime() : 0);
+            player.seekTo(target, true);
+            showBadge('LIVE');
+        };
+    }
+
+    muteBtn.onclick = () => {
+        onPlayerActivity();
+        if (!player) return;
+        if (player.isMuted()) {
+            player.unMute();
+            muteBtn.innerHTML = `<i class="fa-solid fa-volume-high"></i>`;
+        } else {
+            player.mute();
+            muteBtn.innerHTML = `<i class="fa-solid fa-volume-xmark"></i>`;
+        }
+    };
+
+    fsBtn.onclick = () => {
+        onPlayerActivity();
+        toggleVideoStageFullscreen();
+    };
+
+    if (slider) {
+        const hoverBox = document.getElementById('timeline-hover-box');
+        const updateHoverTime = (event) => {
+            if (!hoverBox || !player || typeof player.getDuration !== 'function') return;
+            const state = getTimelineState();
+            if (!state.canSeek) return;
+            const rect = slider.getBoundingClientRect();
+            const pos = Math.min(Math.max(0, event.clientX - rect.left), rect.width);
+            const ratio = rect.width ? pos / rect.width : 0;
+            const targetTime = state.windowStart === null ? state.currentValue : (state.windowStart + (ratio * (state.windowDuration || 0)));
+            hoverBox.textContent = formatTime(targetTime);
+            hoverBox.style.left = `${pos}px`;
+            hoverBox.classList.add('visible');
+        };
+
+        slider.addEventListener('mousemove', updateHoverTime);
+        slider.addEventListener('mouseenter', updateHoverTime);
+        slider.addEventListener('mouseleave', () => {
+            if (hoverBox) hoverBox.classList.remove('visible');
+        });
+
+        slider.oninput = () => {
+            onPlayerActivity();
+            const state = getTimelineState();
+            if (!player || typeof player.seekTo !== 'function' || !state.canSeek) return;
+            const targetTime = state.windowStart === null
+                ? (slider.value / 100) * (state.windowDuration || 0)
+                : state.windowStart + ((slider.value / 100) * (state.windowDuration || 0));
+            player.seekTo(targetTime, true);
+            if (hoverBox) hoverBox.classList.add('visible');
+        };
+    }
+
+    settingsBtn.onclick = (e) => {
+        e.stopPropagation();
+        onPlayerActivity();
+        settingsMenu.classList.toggle('hidden');
+        settingsMenu.classList.toggle('flex');
+    };
+
+    document.addEventListener('click', (e) => {
+        if (!settingsMenu) return;
+        if (!e.target.closest('#settings-popup-menu') && !e.target.closest('#btn-settings-toggle')) {
+            settingsMenu.classList.add('hidden');
+            settingsMenu.classList.remove('flex');
+            // Re-arm the 4s auto-hide timer now that the popup is closed.
+            onPlayerActivity();
+        }
+    });
+
+    document.querySelectorAll('.speed-btn').forEach(btn => {
+        btn.onclick = () => {
+            onPlayerActivity();
+            const speed = parseFloat(btn.dataset.speed);
+            currentSpeed = speed;
+            if (player && player.setPlaybackRate) player.setPlaybackRate(speed);
+            document.querySelectorAll('.speed-btn').forEach(b => {
+                b.className = "speed-btn px-1.5 py-1 text-[11px] font-bold rounded-lg border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700 transition";
+            });
+            btn.className = "speed-btn px-1.5 py-1 text-[11px] font-bold rounded-lg border border-brand-primary bg-brand-primary/20 text-brand-primary";
+        };
+    });
+
+    document.querySelectorAll('.quality-btn').forEach(btn => {
+        btn.onclick = () => {
+            onPlayerActivity();
+            const quality = btn.dataset.quality;
+            currentQuality = quality;
+            if (player && player.setPlaybackQuality) player.setPlaybackQuality(quality);
+            const container = document.getElementById('video-stage-container');
+            container.className = `relative w-full aspect-video bg-black overflow-hidden select-none group q-${quality}`;
+            
+            document.querySelectorAll('.quality-btn').forEach(b => {
+                b.className = "quality-btn px-1.5 py-1 text-[11px] font-bold rounded-lg border border-slate-700 bg-slate-800/60 text-slate-300 hover:bg-slate-700 transition";
+            });
+            btn.className = "quality-btn px-1.5 py-1 text-[11px] font-bold rounded-lg border border-brand-primary bg-brand-primary/20 text-brand-primary";
+        };
+    });
+}
+
+function getVideoStageEl() {
+    return document.getElementById('video-stage-container');
+}
+
+function toggleVideoStageFullscreen() {
+    const stage = getVideoStageEl();
+    if (!stage) return;
+    const doc = document;
+    const active = doc.fullscreenElement || doc.webkitFullscreenElement;
+    if (!active) {
+        const req = stage.requestFullscreen || stage.webkitRequestFullscreen;
+        if (req) req.call(stage).catch(() => {});
+    } else {
+        const exit = doc.exitFullscreen || doc.webkitExitFullscreen;
+        if (exit) exit.call(doc);
+    }
+}
+
+function syncFullscreenButtonIcon() {
+    const fsBtn = document.getElementById('btn-fullscreen-toggle');
+    const stage = getVideoStageEl();
+    if (!fsBtn || !stage) return;
+    const active = document.fullscreenElement === stage || document.webkitFullscreenElement === stage;
+    fsBtn.innerHTML = active
+        ? `<i class="fa-solid fa-compress"></i>`
+        : `<i class="fa-solid fa-expand"></i>`;
+}
+
+function togglePlayPause() {
+    if (!player || typeof player.getPlayerState !== 'function') return;
+    const state = player.getPlayerState();
+    if (state === YT.PlayerState.PLAYING) {
+        player.pauseVideo();
+    } else {
+        player.playVideo();
+    }
+}
+
+function seekRelative(sec) {
+    if (!player || typeof player.getCurrentTime !== 'function' || typeof player.seekTo !== 'function') return;
+    const state = getTimelineState();
+    const currentTime = player.getCurrentTime();
+    const duration = state.windowDuration !== null ? state.windowDuration : (state.windowEnd || 0);
+    const start = state.windowStart !== null ? state.windowStart : 0;
+    const target = Math.min(Math.max(start, currentTime + sec), start + duration);
+    player.seekTo(target, true);
+    showBadge(sec > 0 ? `+${sec}s` : `${sec}s`);
+}
+
+function showBadge(text) {
+    const badge = document.getElementById('custom-action-badge');
+    const badgeVal = document.getElementById('badge-text-val');
+    if (!badge || !badgeVal) return;
+    badgeVal.textContent = text;
+    badge.classList.remove('opacity-0', 'scale-90');
+    badge.classList.add('opacity-100', 'scale-100');
+    setTimeout(() => {
+        badge.classList.add('opacity-0', 'scale-90');
+        badge.classList.remove('opacity-100', 'scale-100');
+    }, 550);
+}
+
+function syncProgress() {
+    if (!player || typeof player.getCurrentTime !== 'function') return;
+
+    const current = player.getCurrentTime();
+    if (isFiniteNumber(current)) {
+        if (currentLessonType === 'live') {
+            lastLiveEdgeTime = Math.max(lastLiveEdgeTime, current);
+        }
+    }
+
+    const state = getTimelineState();
+    const slider = document.getElementById('progress-slider');
+    const tooltip = document.getElementById('progress-tooltip');
+
+    if (document.getElementById('time-current')) {
+        document.getElementById('time-current').textContent = state.currentText;
+    }
+
+    if (slider) {
+        slider.value = state.sliderValue;
+        slider.title = state.isLive ? `${state.currentText} / ${state.durationText}` : `${state.currentText} / ${state.durationText}`;
+        slider.setAttribute('aria-valuenow', `${Math.round(state.currentValue)}`);
+        slider.setAttribute('aria-valuetext', state.isLive ? `${state.currentText} من ${state.durationText}` : `${state.currentText} من ${state.durationText}`);
+    }
+
+    if (tooltip) {
+        tooltip.textContent = `${state.currentText} / ${state.durationText}`;
+    }
+
+    if (document.getElementById('time-duration')) {
+        document.getElementById('time-duration').textContent = state.durationText;
+    }
+
+    updateControlsForLive(currentLessonType === 'live');
+}
+
+function syncPlayState() {
+    if (!player || typeof player.getPlayerState !== 'function') return;
+    const isPlaying = player.getPlayerState() === YT.PlayerState.PLAYING;
+    const btn = document.getElementById('btn-play-toggle');
+    btn.innerHTML = isPlaying ? `<i class="fa-solid fa-pause"></i>` : `<i class="fa-solid fa-play"></i>`;
+}
+
+function handleStateChange(state) {
+    if (!state && state !== 0) return; // Handle null/undefined
+    
+    syncPlayState();
+    const centerIcon = document.getElementById('custom-center-play');
+    const loadingLine = document.getElementById('video-loading-line');
+
+    if (state === YT.PlayerState.BUFFERING) {
+        if (loadingLine) {
+            loadingLine.classList.remove('opacity-0', '-translate-x-full');
+            loadingLine.classList.add('opacity-100', 'animate-pulse');
+        }
+    } else {
+        if (loadingLine) {
+            loadingLine.classList.add('opacity-0', '-translate-x-full');
+            loadingLine.classList.remove('opacity-100', 'animate-pulse');
+        }
+    }
+
+    if (!centerIcon) return;
+
+    if (state === YT.PlayerState.PAUSED) {
+        if (centerIconHideTimeout) clearTimeout(centerIconHideTimeout);
+        centerIcon.innerHTML = `<i class="fa-solid fa-play"></i>`;
+        centerIcon.classList.remove('opacity-0', 'scale-90');
+        centerIcon.classList.add('opacity-100', 'scale-100');
+        showControls(true);
+    } else if (state === YT.PlayerState.PLAYING) {
+        centerIcon.innerHTML = `<i class="fa-solid fa-pause"></i>`;
+        centerIcon.classList.remove('opacity-0', 'scale-90');
+        centerIcon.classList.add('opacity-100', 'scale-100');
+        scheduleCenterIconHide();
+        showControls();
+    }
+}
+
+function scheduleCenterIconHide() {
+    const centerIcon = document.getElementById('custom-center-play');
+    if (!centerIcon) return;
+    if (centerIconHideTimeout) clearTimeout(centerIconHideTimeout);
+    centerIconHideTimeout = setTimeout(() => {
+        if (player && player.getPlayerState && player.getPlayerState() === YT.PlayerState.PLAYING) {
+            centerIcon.classList.add('opacity-0', 'scale-90');
+            centerIcon.classList.remove('opacity-100', 'scale-100');
+        }
+    }, 4000);
+}
+
+function showControls(forceVisibleWhilePaused) {
+    const bar = document.getElementById('video-control-bar');
+    if (!bar) return;
+    bar.classList.remove('opacity-0', 'translate-y-full', 'pointer-events-none');
+    bar.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+    resetControlsTimer(forceVisibleWhilePaused);
+}
+
+function hideControls() {
+    const bar = document.getElementById('video-control-bar');
+    if (!bar || !player || typeof player.getPlayerState !== 'function') return;
+    if (player.getPlayerState() !== YT.PlayerState.PLAYING) return;
+    // Never hide the bar out from under the user while they're using the settings popup.
+    const settingsMenu = document.getElementById('settings-popup-menu');
+    if (settingsMenu && !settingsMenu.classList.contains('hidden')) return;
+    bar.classList.add('opacity-0', 'translate-y-full', 'pointer-events-none');
+    bar.classList.remove('opacity-100', 'translate-y-0');
+}
+
+function resetControlsTimer(forceVisibleWhilePaused) {
+    if (controlsHideTimeout) clearTimeout(controlsHideTimeout);
+    const isPlaying = player && typeof player.getPlayerState === 'function' && player.getPlayerState() === YT.PlayerState.PLAYING;
+    // On any device: if the video is not playing (paused/ended/cued), keep the control bar
+    // visible and don't schedule a hide. If it's playing, hide it after 4s of no interaction
+    // anywhere on the player (mouse or touch), unless the settings popup is open.
+    if (!isPlaying || forceVisibleWhilePaused) return;
+    controlsHideTimeout = setTimeout(() => {
+        hideControls();
+    }, 4000);
+}
+
+
+function formatTime(seconds) {
+    const safe = Math.max(0, Math.floor(seconds || 0));
+    const mins = Math.floor(safe / 60);
+    const secs = safe % 60;
+    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
+}
+
+window.closeFullscreenPlayer = function() {
+    if (ytTimer) clearInterval(ytTimer);
+    ytTimer = null;
+    if (controlsHideTimeout) clearTimeout(controlsHideTimeout);
+    if (centerIconHideTimeout) clearTimeout(centerIconHideTimeout);
+    const stage = getVideoStageEl();
+    if (document.fullscreenElement === stage || document.webkitFullscreenElement === stage) {
+        const exit = document.exitFullscreen || document.webkitExitFullscreen;
+        if (exit) exit.call(document);
+    }
+    syncFullscreenButtonIcon();
+    if (player && typeof player.destroy === 'function') {
+        player.destroy();
+        player = null;
+    }
+    if (fsPlyrInstance) {
+        fsPlyrInstance.stop();
+        fsPlyrInstance.destroy();
+        fsPlyrInstance = null;
+    }
+    const fsContainer = document.getElementById('fs-player-container');
+    if (fsContainer) fsContainer.innerHTML = '';
+    const ytStage = document.getElementById('yt-player-target');
+    if (ytStage) {
+        ytStage.innerHTML = '';
+        ytStage.classList.add('pointer-events-none');
+    }
+    const modal = document.getElementById('fullscreen-player-modal');
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+
+    if (currentActiveCourseId && globalCoursesData[currentActiveCourseId]) {
+        openCourseDetails(currentActiveCourseId);
+    }
+};
+
+        function processImageToBase64(file, maxWidth = 500) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        const fileSizeMB = file.size / (1024 * 1024);
+                        let quality = 0.85;
+                        if (fileSizeMB > 4) {
+                            quality = 0.45;
+                        } else if (fileSizeMB > 2) {
+                            quality = 0.55;
+                        } else if (fileSizeMB > 1) {
+                            quality = 0.7;
+                        }
+
+                        const base64Res = canvas.toDataURL('image/jpeg', quality);
+                        resolve(base64Res);
+                    };
+                };
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        function subscribeToStudentSubscriptions(userEmail) {
+            if (!window.db || !userEmail) return;
+            if (subscriptionsUnsubscribe) subscriptionsUnsubscribe();
+
+            const q = window.fs.query(window.fs.collection(window.db, "subscriptions"), window.fs.where("studentEmail", "==", userEmail));
+            subscriptionsUnsubscribe = window.fs.onSnapshot(q, (snapshot) => {
+                userSubscriptions = {};
+                snapshot.forEach(d => {
+                    const data = d.data();
+                    userSubscriptions[data.courseId] = data.status;
+                });
+                loadPlatformData();
+            });
+        }
+
+        async function fetchStudentProgressCloud(userEmail) {
+            if (!window.db || !userEmail) return;
+            const q = window.fs.query(window.fs.collection(window.db, "user_progress"), window.fs.where("studentEmail", "==", userEmail));
+            const snap = await window.fs.getDocs(q);
+            userCompletedLessons = {};
+            snap.forEach(d => {
+                const data = d.data();
+                userCompletedLessons[`${data.courseId}_${data.lessonIndex}`] = true;
+            });
+            if (currentActiveCourseId) openCourseDetails(currentActiveCourseId);
+        }
+
+        async function markLessonCompletedCloud(courseId, lessonIndex) {
+            if (!activeUser || !window.db) return;
+            const key = `${courseId}_${lessonIndex}`;
+            if (userCompletedLessons[key]) return;
+
+            userCompletedLessons[key] = true;
+            await window.fs.addDoc(window.fs.collection(window.db, "user_progress"), {
+                studentEmail: activeUser.email,
+                courseId,
+                lessonIndex,
+                completedAt: new Date().toISOString()
+            });
+        }
+
+        async function loadPlatformData() {
+            if (!window.db) return;
+
+            // Load Owner teacher subscriptions admin requests
+            const teacherPlanRequestsTable = document.getElementById('owner-teacher-plan-requests-table');
+            if (teacherPlanRequestsTable) {
+                teacherPlanRequestsTable.innerHTML = '';
+                const planReqsSnap = await window.fs.getDocs(window.fs.collection(window.db, "teacher_plan_requests"));
+                planReqsSnap.forEach(d => {
+                    const req = d.data();
+                    const reqId = d.id;
+                    if (req.status === 'pending') {
+                        teacherPlanRequestsTable.innerHTML += `
+                            <tr class="border-b border-slate-100 dark:border-slate-700">
+                                <td class="p-3 font-bold">${req.teacherName}</td>
+                                <td class="p-3">${req.teacherEmail}</td>
+                                <td class="p-3 font-mono">${req.teacherPassword || '******'}</td>
+                                <td class="p-3 font-bold text-indigo-600">${getRequestField(req, ['planLabel', 'planType', 'selectedPlan', 'package']) || 'غير محددة'} ${req.cycleLabel ? `(${req.cycleLabel})` : ''}</td>
+                                <td class="p-3">${getRequestField(req, ['amountLabel']) || (req.amount === 0 ? 'مجاني' : (req.amount ? req.amount + ' ج.م' : 'غير محدد'))}</td>
+                                <td class="p-3">
+                                    ${getRequestField(req, ['receiptImage', 'receipt', 'receiptUrl', 'paymentReceipt']) ? `<button onclick="previewReceipt('${getRequestField(req, ['receiptImage', 'receipt', 'receiptUrl', 'paymentReceipt'])}')" class="text-brand-primary underline text-xs font-bold">معاينة الإيصال</button>` : '<span class="text-slate-400">لا يوجد</span>'}
+                                </td>
+                                <td class="p-3 space-x-2 space-x-reverse">
+                                    <button onclick="approveTeacherPlanRequest('${reqId}', '${req.teacherEmail}')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">قبول</button>
+                                    <button onclick="rejectTeacherPlanRequest('${reqId}', '${req.teacherEmail}')" class="bg-rose-500 hover:bg-rose-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">رفض</button>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                });
+                if (teacherPlanRequestsTable.innerHTML === '') {
+                    teacherPlanRequestsTable.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">لا توجد طلبات اشتراك معلمين معلقة.</td></tr>`;
+                }
+            }
+
+            const teachersSnap = await window.fs.getDocs(window.fs.collection(window.db, "teachers"));
+            const pendingTable = document.getElementById('owner-pending-teachers-table');
+            const approvedTable = document.getElementById('owner-approved-teachers-table');
+            const approvedTeachersContainer = document.getElementById('approved-teachers-list');
+            const teachersLoginRequiredNotice = document.getElementById('teachers-login-required-notice');
+
+            if(pendingTable) pendingTable.innerHTML = '';
+            if(approvedTable) approvedTable.innerHTML = '';
+            if(approvedTeachersContainer) approvedTeachersContainer.innerHTML = '';
+            if(teachersLoginRequiredNotice) teachersLoginRequiredNotice.classList.add('hidden');
+
+            globalTeachersData = {};
+
+            teachersSnap.forEach(docSnap => {
+                const t = docSnap.data();
+                const tId = docSnap.id;
+                t.id = tId;
+                globalTeachersData[t.email] = t;
+
+                const avatarHtml = t.avatar 
+                    ? `<img src="${t.avatar}" class="w-9 h-9 rounded-full object-cover">`
+                    : `<div class="w-9 h-9 rounded-full bg-indigo-100 text-brand-primary flex items-center justify-center font-bold text-sm">${t.name[0]}</div>`;
+
+                if (t.status === 'pending') {
+                    if(pendingTable) {
+                        pendingTable.innerHTML += `
+                            <tr class="border-b border-slate-100 dark:border-slate-700">
+                                <td class="p-3">${avatarHtml}</td>
+                                <td class="p-3 font-bold">${t.name}</td>
+                                <td class="p-3">${t.spec}</td>
+                                <td class="p-3">${t.email}</td>
+                                <td class="p-3">
+                                    <button onclick="approveTeacher('${tId}')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">قَبول</button>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                } else if (t.status === 'approved') {
+                    if(approvedTable) {
+                        approvedTable.innerHTML += `
+                            <tr class="border-b border-slate-100 dark:border-slate-700">
+                                <td class="p-3">${avatarHtml}</td>
+                                <td class="p-3 font-bold">${t.name}</td>
+                                <td class="p-3">${t.spec}</td>
+                                <td class="p-3">${t.email}</td>
+                                <td class="p-3">
+                                    <button onclick="deleteTeacher('${tId}')" class="bg-rose-500 hover:bg-rose-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">حذف</button>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                    if(approvedTeachersContainer) {
+                        const bigAvatarHtml = t.avatar 
+                            ? `<img src="${t.avatar}" class="w-16 h-16 mx-auto rounded-full object-cover mb-3">`
+                            : `<div class="w-16 h-16 mx-auto rounded-full bg-indigo-100 text-brand-primary flex items-center justify-center font-bold text-2xl mb-3">${t.name[0]}</div>`;
+
+                        approvedTeachersContainer.innerHTML += `
+                            <div onclick="openTeacherProfile('${t.email}')" class="interactive-card bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 text-center shadow-sm cursor-pointer">
+                                ${bigAvatarHtml}
+                                <h3 class="font-bold text-slate-800 dark:text-white">${t.name}</h3>
+                                <p class="text-xs text-slate-400 mb-3">${t.spec}</p>
+                                <span class="text-xs font-bold text-brand-primary">عرض الدورات <i class="fa-solid fa-arrow-left mr-1"></i></span>
+                            </div>
+                        `;
+                    }
+                }
+            });
+
+            const coursesSnap = await window.fs.getDocs(window.fs.collection(window.db, "courses"));
+            const ownerCoursesTable = document.getElementById('owner-courses-table');
+            const teacherCoursesGrid = document.getElementById('teacher-courses-grid');
+            const allCoursesList = document.getElementById('all-courses-list');
+            const noticeBox = document.getElementById('login-required-notice');
+
+            if(ownerCoursesTable) ownerCoursesTable.innerHTML = '';
+            if(teacherCoursesGrid) teacherCoursesGrid.innerHTML = '';
+            if(allCoursesList) allCoursesList.innerHTML = '';
+
+            globalCoursesData = {};
+
+            if (!activeUser) {
+                if(noticeBox) noticeBox.classList.remove('hidden');
+                if(allCoursesList) allCoursesList.classList.add('hidden');
+                if(teachersLoginRequiredNotice) teachersLoginRequiredNotice.classList.remove('hidden');
+                if(approvedTeachersContainer) approvedTeachersContainer.classList.add('hidden');
+            } else {
+                if(noticeBox) noticeBox.classList.add('hidden');
+                if(allCoursesList) allCoursesList.classList.remove('hidden');
+                if(teachersLoginRequiredNotice) teachersLoginRequiredNotice.classList.add('hidden');
+                if(approvedTeachersContainer) approvedTeachersContainer.classList.remove('hidden');
+            }
+
+            coursesSnap.forEach(docSnap => {
+                const c = docSnap.data();
+                const cId = docSnap.id;
+                c.id = cId;
+                globalCoursesData[cId] = c;
+
+                const lessons = c.lessons || [];
+
+                if(ownerCoursesTable) {
+                    ownerCoursesTable.innerHTML += `
+                        <tr class="border-b border-slate-100 dark:border-slate-700">
+                            <td class="p-3 font-bold">${c.title}</td>
+                            <td class="p-3">${c.teacherName}</td>
+                            <td class="p-3">${lessons.length} حصة</td>
+                            <td class="p-3">
+                                <button onclick="deleteCourse('${cId}')" class="bg-rose-500 hover:bg-rose-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">حذف</button>
+                            </td>
+                        </tr>
+                    `;
+                }
+
+                if (activeUser && activeUser.email === c.teacherEmail && activeUser.status === 'approved' && teacherCoursesGrid) {
+                    let lessonsListHtml = '';
+                    lessons.forEach((l, index) => {
+                        lessonsListHtml += `
+                            <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-700/50 p-2 rounded-xl text-xs">
+                                <span class="font-bold truncate max-w-[180px]">${l.title}</span>
+                                <button onclick="deleteLesson('${cId}', ${index})" class="text-rose-500 hover:text-rose-700 font-bold">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                    });
+
+                    teacherCoursesGrid.innerHTML += `
+                        <div class="interactive-card bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+                            <div>
+                                ${c.image ? `<img src="${c.image}" class="w-full h-36 object-cover rounded-xl mb-3" alt="${c.title}">` : ''}
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="font-bold text-lg text-slate-800 dark:text-white">${c.title}</h3>
+                                    <button onclick="deleteCourse('${cId}')" class="text-xs bg-rose-100 text-rose-600 px-2 py-1 rounded-lg hover:bg-rose-200 font-bold">
+                                        <i class="fa-solid fa-trash ml-1"></i> حذف
+                                    </button>
+                                </div>
+                                <p class="text-xs font-bold text-emerald-600 mb-2">السعر: ${c.price || 0} ج.م | فودافون: ${c.vodafoneNumber || 'غير محدد'}</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">${c.desc}</p>
+                                <div class="space-y-2 mb-4">
+                                    ${lessonsListHtml || '<p class="text-xs text-slate-400">لا توجد حصص مضافة بعد.</p>'}
+                                </div>
+                            </div>
+                            <button onclick="openLessonModal('${cId}')" class="w-full bg-brand-primary text-white text-xs font-bold py-2.5 rounded-xl hover:bg-indigo-700 transition">
+                                <i class="fa-solid fa-plus ml-1"></i> إضافة حصة جديدة
+                            </button>
+                        </div>
+                    `;
+                }
+
+                if (activeUser && allCoursesList) {
+                    allCoursesList.innerHTML += renderCourseCardHtml(c);
+                }
+            });
+
+            if (activeUser && activeUser.role === 'teacher') {
+                loadTeacherSubscriptions(activeUser.email);
+            }
+        }
+
+       async function approveTeacherPlanRequest(reqId, teacherEmail) {
+    // 1. تحديث حالة الطلب إلى مقبول
+    await window.fs.updateDoc(window.fs.doc(window.db, "teacher_plan_requests", reqId), { status: 'approved' });
+    
+    // 2. تفعيل حساب المعلم في كولكشن المعلمين
+    const q = window.fs.query(window.fs.collection(window.db, "teachers"), window.fs.where("email", "==", teacherEmail));
+    const snap = await window.fs.getDocs(q);
+    snap.forEach(async docSnap => {
+        await window.fs.updateDoc(window.fs.doc(window.db, "teachers", docSnap.id), { status: 'approved' });
+    });
+
+    showAppAlert('تم القبول', 'تم قبول طلب الاشتراك وتفعيل لوحة المعلم بنجاح!', 'success');
+    loadPlatformData();
+}
+
+async function rejectTeacherPlanRequest(reqId, teacherEmail) {
+    // 1. تحديث حالة الطلب إلى مرفوض
+    await window.fs.updateDoc(window.fs.doc(window.db, "teacher_plan_requests", reqId), { status: 'rejected' });
+    
+    // 2. إلغاء/إيقاف اشتراك المعلم وحظر دخوله للوحة في حالة الرفض
+    const q = window.fs.query(window.fs.collection(window.db, "teachers"), window.fs.where("email", "==", teacherEmail));
+    const snap = await window.fs.getDocs(q);
+    snap.forEach(async docSnap => {
+        await window.fs.updateDoc(window.fs.doc(window.db, "teachers", docSnap.id), { 
+            status: 'rejected',
+            planExpireAt: new Date(0).toISOString() // إنهاء تاريخ الصلاحية فوراً للإغلاق عليه
+        });
+    });
+
+    showAppAlert('تم الرفض', 'تم رفض طلب الاشتراك وإغلاق الصلاحية عن المعلم.', 'error');
+    loadPlatformData();
+}
+
+        function renderCourseCardHtml(c) {
+            const subStatus = userSubscriptions[c.id]; 
+            const teacher = globalTeachersData[c.teacherEmail];
+
+            const teacherAvatar = (teacher && teacher.avatar) || c.teacherAvatar
+                ? `<img src="${(teacher && teacher.avatar) || c.teacherAvatar}" class="w-6 h-6 rounded-full object-cover">`
+                : `<div class="w-6 h-6 rounded-full bg-indigo-100 text-brand-primary flex items-center justify-center font-bold text-xs">${c.teacherName[0]}</div>`;
+
+            let buttonHtml = '';
+            if (activeUser && activeUser.email === c.teacherEmail) {
+                buttonHtml = `<button onclick="openCourseDetails('${c.id}')" class="bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-white px-4 py-2 rounded-xl text-xs font-bold">معاينة الكورس</button>`;
+            } else if (subStatus === 'approved') {
+                buttonHtml = `<button onclick="openCourseDetails('${c.id}')" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-700 transition">تصفح الكورس <i class="fa-solid fa-lock-open mr-1"></i></button>`;
+            } else if (subStatus === 'pending') {
+                buttonHtml = `<span class="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-xl text-xs font-bold">بانتظار موافقة المدرس</span>`;
+            } else {
+                buttonHtml = `
+                    <button onclick="openPaymentModal('${c.id}')" class="bg-brand-primary text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 transition">
+                        شراء الكورس
+                    </button>
+                `;
+            }
+
+            return `
+                <div data-title="${c.title.toLowerCase()}" data-teacher="${c.teacherName.toLowerCase()}" data-subject="${(c.subject||'').toLowerCase()}" class="interactive-card bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 onclick="openCourseDetails('${c.id}')" class="font-extrabold text-xl text-slate-800 dark:text-white hover:text-brand-primary transition cursor-pointer">${c.title}</h3>
+                            <span class="bg-brand-primary/10 text-brand-primary border border-brand-primary/20 text-xs font-black px-3 py-1 rounded-full">
+                                ${c.subject || 'عام'}
+                            </span>
+                        </div>
+                        ${c.image ? `<img onclick="openCourseDetails('${c.id}')" src="${c.image}" class="w-full h-44 object-cover rounded-2xl mb-4 cursor-pointer" alt="${c.title}">` : ''}
+                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-3 mb-4">${c.desc}</p>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center bg-slate-50 dark:bg-slate-700/50 p-3 rounded-2xl mb-4">
+                            <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">سعر الكورس:</span>
+                            <span class="text-base font-black text-emerald-600 dark:text-emerald-400">${c.price || 0} <span class="text-xs font-bold">ج.م</span></span>
+                        </div>
+                        <div class="pt-2 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between text-xs">
+                            <span class="font-bold text-slate-600 dark:text-slate-300 flex items-center gap-1.5 cursor-pointer" onclick="openTeacherProfile('${c.teacherEmail}')">
+                                ${teacherAvatar} ${c.teacherName}
+                            </span>
+                            <div>${buttonHtml}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function openTeacherProfile(email) {
+            const teacher = globalTeachersData[email];
+            if (!teacher) return;
+
+            const header = document.getElementById('teacher-profile-header');
+            const list = document.getElementById('teacher-courses-list');
+
+            const avatarHtml = teacher.avatar 
+                ? `<img src="${teacher.avatar}" class="w-20 h-20 rounded-full object-cover shrink-0">`
+                : `<div class="w-20 h-20 rounded-full bg-indigo-100 text-brand-primary flex items-center justify-center font-bold text-3xl shrink-0">${teacher.name[0]}</div>`;
+
+            header.innerHTML = `
+                ${avatarHtml}
+                <div>
+                    <h1 class="text-3xl font-black text-slate-800 dark:text-white">${teacher.name}</h1>
+                    <p class="text-sm text-brand-primary font-bold mt-1">التخصص: ${teacher.spec}</p>
+                    <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-envelope ml-1"></i> ${teacher.email}</p>
+                </div>
+            `;
+
+            list.innerHTML = '';
+            Object.values(globalCoursesData).forEach(c => {
+                if (c.teacherEmail === email) {
+                    list.innerHTML += renderCourseCardHtml(c);
+                }
+            });
+
+            if (list.innerHTML === '') {
+                list.innerHTML = `<p class="text-slate-400 text-sm font-bold col-span-3 text-center py-8">لم يقم المعلم بإضافة دورات بعد.</p>`;
+            }
+
+            navigateTo('teacher-profile');
+        }
+
+        function openPaymentModal(courseId) {
+            if (!activeUser) {
+                openRoleSelectionModal('login');
+                return;
+            }
+
+            const course = globalCoursesData[courseId];
+            if (!course) return;
+
+            selectedCourseForPay = course;
+            document.getElementById('pay-modal-price').innerText = `${course.price || 0} جنيه مصري`;
+            document.getElementById('pay-modal-number').innerText = course.vodafoneNumber || 'غير محدد';
+
+            const modal = document.getElementById('payment-info-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function proceedToReceiptForm() {
+            closeModal('payment-info-modal');
+            
+            document.getElementById('receipt-course-id').value = selectedCourseForPay.id;
+            document.getElementById('receipt-student-name').value = activeUser.name;
+            
+            const modal = document.getElementById('payment-receipt-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        async function submitPaymentReceipt(e) {
+            e.preventDefault();
+            const courseId = document.getElementById('receipt-course-id').value;
+            const studentName = document.getElementById('receipt-student-name').value;
+            const phone = document.getElementById('receipt-phone').value;
+            const file = document.getElementById('receipt-file').files[0];
+
+            showLoadingOverlay('جاري إرسال طلب الاشتراك...');
+            try {
+                let receiptBase64 = '';
+                if (file) {
+                    receiptBase64 = await processImageToBase64(file, 600);
+                }
+
+                const course = globalCoursesData[courseId];
+
+                await window.fs.addDoc(window.fs.collection(window.db, "subscriptions"), {
+                    courseId,
+                    courseTitle: course.title,
+                    teacherEmail: course.teacherEmail,
+                    studentName,
+                    studentEmail: activeUser.email,
+                    phone,
+                    receiptImage: receiptBase64,
+                    status: 'pending',
+                    createdAt: new Date().toISOString()
+                });
+
+                closeModal('payment-receipt-modal');
+                hideLoadingOverlay();
+                showAppAlert('تم الإرسال', 'تم إرسال إيصال التحويل للمعلم بنجاح! سيتم فتح الكورس لك فور قبول الإيصال.', 'success');
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        async function loadTeacherSubscriptions(teacherEmail) {
+            const table = document.getElementById('teacher-subscriptions-table');
+            if (!table) return;
+            table.innerHTML = '';
+
+            const q = window.fs.query(window.fs.collection(window.db, "subscriptions"), 
+                window.fs.where("teacherEmail", "==", teacherEmail),
+                window.fs.where("status", "==", "pending")
+            );
+            const snap = await window.fs.getDocs(q);
+
+            snap.forEach(dSnap => {
+                const sub = dSnap.data();
+                const subId = dSnap.id;
+
+                table.innerHTML += `
+                    <tr class="border-b border-slate-100 dark:border-slate-700">
+                        <td class="p-3 font-bold">${sub.studentName}</td>
+                        <td class="p-3">${sub.courseTitle}</td>
+                        <td class="p-3 font-mono font-bold">${sub.phone}</td>
+                        <td class="p-3">
+                            <button onclick="previewReceipt('${sub.receiptImage}')" class="text-brand-primary underline text-xs font-bold">معاينة الإيصال</button>
+                        </td>
+                        <td class="p-3 space-x-2 space-x-reverse">
+                            <button onclick="approveSubscription('${subId}')" class="bg-emerald-500 hover:bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">قبول</button>
+                            <button onclick="rejectSubscription('${subId}')" class="bg-rose-500 hover:bg-rose-600 text-white text-xs px-3 py-1.5 rounded-lg font-bold">رفض</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            if (table.innerHTML === '') {
+                table.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">لا توجد طلبات اشتراك معلقة حالياً.</td></tr>`;
+            }
+        }
+
+        function previewReceipt(imgBase64) {
+            document.getElementById('receipt-img-preview').src = imgBase64;
+            const modal = document.getElementById('view-receipt-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        async function approveSubscription(subId) {
+            await window.fs.updateDoc(window.fs.doc(window.db, "subscriptions", subId), { status: 'approved' });
+            showAppAlert('تم القبول', 'تم قبول الطالب بنجاح وفتح الكورس له!', 'success');
+            loadTeacherSubscriptions(activeUser.email);
+        }
+
+        function rejectSubscription(subId) {
+            showAppAlert(
+                'تأكيد الرفض',
+                'هل أنت متأكد من رفض طلب الاشتراك هذا؟',
+                'confirm',
+                async () => {
+                    await window.fs.deleteDoc(window.fs.doc(window.db, "subscriptions", subId));
+                    loadTeacherSubscriptions(activeUser.email);
+                },
+                true
+            );
+        }
+
+        function openCourseDetails(courseId) {
+            const course = globalCoursesData[courseId];
+            if (!course) return;
+
+            currentActiveCourseId = courseId;
+            const isTeacherOwner = activeUser && activeUser.email === course.teacherEmail;
+            const isSubscribed = userSubscriptions[courseId] === 'approved';
+            const teacher = globalTeachersData[course.teacherEmail];
+
+            const teacherAvatar = (teacher && teacher.avatar) || course.teacherAvatar
+                ? `<img src="${(teacher && teacher.avatar) || course.teacherAvatar}" class="w-8 h-8 rounded-full object-cover">`
+                : `<div class="w-8 h-8 rounded-full bg-indigo-100 text-brand-primary flex items-center justify-center font-bold text-xs">${course.teacherName[0]}</div>`;
+
+            const headerContainer = document.getElementById('course-details-header');
+            const lessonsContainer = document.getElementById('course-lessons-container');
+
+            headerContainer.innerHTML = `
+                <div class="flex justify-between items-start gap-4 mb-4">
+                    <div>
+                        <h1 class="text-3xl font-black text-slate-800 dark:text-white mb-2">${course.title}</h1>
+                        <p class="text-sm font-bold text-brand-primary flex items-center gap-2 cursor-pointer" onclick="openTeacherProfile('${course.teacherEmail}')">
+                            ${teacherAvatar} المعلم: ${course.teacherName}
+                        </p>
+                    </div>
+                    <span class="bg-brand-primary text-white text-xs md:text-sm font-extrabold px-4 py-1.5 rounded-full shadow-md">
+                        مادة: ${course.subject || 'عام'}
+                    </span>
+                </div>
+                ${course.image ? `<img src="${course.image}" class="w-full max-h-64 object-cover rounded-2xl mb-4 shadow-sm" alt="${course.title}">` : ''}
+                <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">${course.desc}</p>
+            `;
+
+            const lessons = course.lessons || [];
+            lessonsContainer.innerHTML = '';
+
+            if (lessons.length === 0) {
+                lessonsContainer.innerHTML = `
+                    <div class="text-center py-12 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <i class="fa-solid fa-video-slash text-4xl text-slate-400 mb-3"></i>
+                        <p class="text-sm text-slate-400 font-bold">لم يتم إضافة أي حصص لهذه الدورة حتى الآن.</p>
+                    </div>
+                `;
+            } else {
+                lessons.forEach((lesson, index) => {
+                    const canWatch = isTeacherOwner || isSubscribed;
+                    const completed = !!userCompletedLessons[`${courseId}_${index}`];
+
+                    let statusBadgeHtml = '';
+                    if (completed) {
+                        statusBadgeHtml = `
+                            <span class="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 text-xs font-black px-3 py-1 rounded-xl">
+                                <i class="fa-solid fa-circle-check text-emerald-500"></i> مكتملة
+                            </span>
+                        `;
+                    } else if (canWatch) {
+                        statusBadgeHtml = `
+                            <span class="inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-600 text-xs font-bold px-3 py-1 rounded-lg">
+                                <i class="fa-solid fa-unlock"></i> متاحة
+                            </span>
+                        `;
+                    } else {
+                        statusBadgeHtml = `
+                            <span class="inline-flex items-center gap-1 bg-rose-500/10 text-rose-600 text-xs font-bold px-3 py-1 rounded-lg">
+                                <i class="fa-solid fa-lock"></i> مقفولة
+                            </span>
+                        `;
+                    }
+
+                    const lessonType = lesson.type === 'live' ? 'live' : 'video';
+                    const lessonTypeBadge = lessonType === 'live'
+                        ? '<span class="inline-flex items-center gap-1 rounded-full bg-amber-500/10 text-amber-600 px-2.5 py-1 text-[10px] font-black">بث مباشر</span>'
+                        : '<span class="inline-flex items-center gap-1 rounded-full bg-sky-500/10 text-sky-600 px-2.5 py-1 text-[10px] font-black">فيديو</span>';
+                    const lessonIcon = lessonType === 'live' ? 'fa-satellite-dish' : 'fa-play';
+
+                    lessonsContainer.innerHTML += `
+                        <button onclick="${canWatch ? `playLessonFullScreen('${courseId}', ${index})` : `showAppAlert('الكورس مغلق', 'عذراً! يلزم شراء الكورس وموافقة المدرس لتتمكن من مشاهدة الفيديوهات.', 'error')`}" 
+                                class="interactive-card group w-full bg-white dark:bg-slate-800 hover:bg-indigo-50/50 dark:hover:bg-slate-700/50 border border-slate-200 dark:border-slate-700 p-5 rounded-2xl flex items-center justify-between gap-4 text-right">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-700 text-slate-400 border border-slate-200 dark:border-slate-600 flex items-center justify-center text-xl shrink-0 ${canWatch ? 'group-hover:bg-brand-primary group-hover:text-white' : ''} transition">
+                                    <i class="fa-solid ${completed ? 'fa-check text-emerald-500 group-hover:text-white' : (canWatch ? lessonIcon : 'fa-lock')}"></i>
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <h4 class="font-extrabold text-base md:text-lg text-slate-800 dark:text-white ${canWatch ? 'group-hover:text-brand-primary' : ''} transition">
+                                            الحصة ${index + 1}: ${lesson.title}
+                                        </h4>
+                                        ${lessonTypeBadge}
+                                    </div>
+                                    <p class="text-xs text-slate-400 mt-1">${canWatch ? (completed ? 'تم استكمال هذه الحصة' : `انقر للتشغيل - ${lessonType === 'live' ? 'بث مباشر' : 'فيديو'}`) : 'الحصة مغلقة - اشترك لفتح المحتوى'}</p>
+                                </div>
+                            </div>
+                            <div>${statusBadgeHtml}</div>
+                        </button>
+                    `;
+                });
+            }
+
+            navigateTo('course-details');
+        }
+
+        async function playLessonFullScreen(courseId, lessonIndex) {
+            const course = globalCoursesData[courseId];
+            if (!course || !course.lessons[lessonIndex]) return;
+
+            currentActiveCourseId = courseId;
+            await markLessonCompletedCloud(courseId, lessonIndex);
+
+            const lesson = course.lessons[lessonIndex];
+            const courseTitleEl = document.getElementById('fs-course-title');
+            if (courseTitleEl) courseTitleEl.innerText = `${course.title} - ${course.teacherName}`;
+
+            const lessonLabel = `الحصة ${lessonIndex + 1}: ${lesson.title}`;
+            const lessonType = lesson.type || 'video';
+            window.openCustomPlayer(lesson.url, lessonLabel, lessonType);
+        }
+
+        async function approveTeacher(id) {
+            await window.fs.updateDoc(window.fs.doc(window.db, "teachers", id), { status: 'approved' });
+            
+            const teacherDoc = await window.fs.getDoc(window.fs.doc(window.db, "teachers", id));
+            if (activeUser && teacherDoc.exists() && activeUser.email === teacherDoc.data().email) {
+                activeUser.status = 'approved';
+                localStorage.setItem('masar_user', JSON.stringify(activeUser));
+                applyUserSession(activeUser);
+            }
+            loadPlatformData();
+        }
+
+        function deleteTeacher(id) {
+            showAppAlert(
+                'تأكيد الحذف',
+                'هل أنت متأكد من حذف هذا المعلم؟',
+                'confirm',
+                async () => {
+                    await window.fs.deleteDoc(window.fs.doc(window.db, "teachers", id));
+                    loadPlatformData();
+                },
+                true
+            );
+        }
+
+        function deleteCourse(id) {
+            showAppAlert(
+                'حذف الدورة',
+                'هل أنت متأكد من حذف هذه الدورة بالكامل؟',
+                'confirm',
+                async () => {
+                    await window.fs.deleteDoc(window.fs.doc(window.db, "courses", id));
+                    loadPlatformData();
+                },
+                true
+            );
+        }
+
+        async function deleteLesson(courseId, lessonIndex) {
+            const courseRef = window.fs.doc(window.db, "courses", courseId);
+            const coursesSnap = await window.fs.getDocs(window.fs.collection(window.db, "courses"));
+            
+            let lessons = [];
+            coursesSnap.forEach(docSnap => {
+                if (docSnap.id === courseId) {
+                    lessons = docSnap.data().lessons || [];
+                }
+            });
+
+            lessons.splice(lessonIndex, 1);
+            await window.fs.updateDoc(courseRef, { lessons });
+            loadPlatformData();
+        }
+
+        function openCourseModal() {
+            document.getElementById('course-modal').classList.remove('hidden');
+            document.getElementById('course-modal').classList.add('flex');
+        }
+
+        function closeCourseModal() {
+            closeModal('course-modal');
+        }
+
+        async function handleAddCourse(e) {
+            e.preventDefault();
+            const subject = document.getElementById('course-subject').value;
+            const title = document.getElementById('course-title').value;
+            const price = document.getElementById('course-price').value;
+            const vodafoneNumber = document.getElementById('course-vodafone').value;
+            const desc = document.getElementById('course-desc').value;
+            const imageFile = document.getElementById('course-image').files[0];
+
+            showLoadingOverlay('جاري إضافة الكورس...');
+            try {
+                let base64Image = '';
+                if (imageFile) {
+                    base64Image = await processImageToBase64(imageFile, 600);
+                }
+
+                await window.fs.addDoc(window.fs.collection(window.db, "courses"), {
+                    subject,
+                    title,
+                    price: Number(price),
+                    vodafoneNumber,
+                    desc,
+                    image: base64Image,
+                    teacherName: activeUser.name,
+                    teacherEmail: activeUser.email,
+                    teacherAvatar: activeUser.avatar || '',
+                    lessons: []
+                });
+                closeCourseModal();
+                hideLoadingOverlay();
+                showAppAlert('تم بنجاح', 'تم إضافة الكورس بنجاح!', 'success');
+                loadPlatformData();
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        function openLessonModal(courseId) {
+            document.getElementById('selected-course-id').value = courseId;
+            document.getElementById('lesson-title').value = '';
+            document.getElementById('lesson-url').value = '';
+            document.getElementById('lesson-type').value = 'video';
+
+            const hintEl = document.getElementById('lesson-limit-hint');
+            if (hintEl) {
+                if (activeUser) {
+                    const limit = getTeacherDailyLessonLimit(activeUser.currentPlan);
+                    const usedToday = countTeacherLessonsToday(globalCoursesData, activeUser.email);
+                    hintEl.textContent = (limit === Infinity)
+                        ? 'خطتك الحالية بدون حد أقصى لعدد الحصص اليومية.'
+                        : `أضفت ${usedToday} من أصل ${limit} حصص متاحة اليوم في خطتك (${getTeacherPlanLabel(activeUser.currentPlan)}).`;
+                } else {
+                    hintEl.textContent = '';
+                }
+            }
+
+            document.getElementById('lesson-modal').classList.remove('hidden');
+            document.getElementById('lesson-modal').classList.add('flex');
+        }
+
+        function closeLessonModal() {
+            closeModal('lesson-modal');
+        }
+
+        // الحد اليومي لعدد الحصص المسموح بإضافتها حسب خطة اشتراك المعلم
+        function getTeacherDailyLessonLimit(planType) {
+            switch (planType) {
+                case 'Plan1': return 2;      // الخطة الأساسية
+                case 'Plan2': return 5;      // الخطة الاحترافية
+                case 'FreeTrial': return 1;  // التجربة المجانية
+                case 'TestPlan': return Infinity; // خطة اختبارية داخلية
+                default: return 2;           // افتراضي احتياطي لأي حساب قديم بدون خطة محددة
+            }
+        }
+
+        // بيعد كل الحصص اللي المعلم ضافها النهاردة عبر كل كورساته مجتمعة (مش الكورس ده بس)
+        function countTeacherLessonsToday(coursesData, teacherEmail) {
+            const todayStr = new Date().toDateString();
+            let count = 0;
+            Object.values(coursesData || {}).forEach(course => {
+                if (course.teacherEmail !== teacherEmail) return;
+                (course.lessons || []).forEach(lesson => {
+                    if (lesson.createdAt && new Date(lesson.createdAt).toDateString() === todayStr) {
+                        count++;
+                    }
+                });
+            });
+            return count;
+        }
+
+        async function handleAddLesson(e) {
+            e.preventDefault();
+            const courseId = document.getElementById('selected-course-id').value;
+            const title = document.getElementById('lesson-title').value.trim();
+            const url = document.getElementById('lesson-url').value.trim();
+            const lessonType = document.getElementById('lesson-type').value || 'video';
+
+            if (!activeUser || activeUser.role !== 'teacher') {
+                showAppAlert('غير مصرح', 'يجب تسجيل الدخول كمعلم لإضافة حصة.', 'error');
+                return;
+            }
+
+            showLoadingOverlay('جاري إضافة الحصة...');
+            try {
+                const courseRef = window.fs.doc(window.db, "courses", courseId);
+                const coursesSnap = await window.fs.getDocs(window.fs.collection(window.db, "courses"));
+
+                let lessons = [];
+                const freshCoursesData = {};
+                coursesSnap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    freshCoursesData[docSnap.id] = data;
+                    if (docSnap.id === courseId) {
+                        lessons = data.lessons || [];
+                    }
+                });
+
+                // تحقّق من الحد اليومي المسموح به حسب خطة المعلم قبل الإضافة — على مستوى كل كورساته مجتمعة
+                const dailyLimit = getTeacherDailyLessonLimit(activeUser.currentPlan);
+                const usedToday = countTeacherLessonsToday(freshCoursesData, activeUser.email);
+                if (usedToday >= dailyLimit) {
+                    hideLoadingOverlay();
+                    showAppAlert(
+                        'وصلت للحد الأقصى اليوم',
+                        `خطتك الحالية (${getTeacherPlanLabel(activeUser.currentPlan)}) بتسمح بإضافة ${dailyLimit} ${dailyLimit === 1 ? 'حصة واحدة' : 'حصص'} يومياً بس، وأنت خلّصت العدد ده النهاردة (في أي كورس من كورساتك). جرب تاني بكرة، أو رقّي خطتك عشان تقدر تضيف أكتر.`,
+                        'error'
+                    );
+                    return;
+                }
+
+                lessons.push({ title, url, type: lessonType, createdAt: new Date().toISOString() });
+                await window.fs.updateDoc(courseRef, { lessons });
+
+                closeLessonModal();
+                hideLoadingOverlay();
+                showAppAlert('تم بنجاح', 'تم إضافة الحصة بنجاح!', 'success');
+                loadPlatformData();
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        function hideSplashScreen() {
+            const splash = document.getElementById('app-splash');
+            if (splash) {
+                splash.classList.add('is-hidden');
+            }
+        }
+
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('masar-theme', isDark ? 'dark' : 'light');
+        }
+
+        window.addEventListener('load', () => {
+            setTimeout(hideSplashScreen, 900);
+        });
+    </script>
+</body>
+</html>
