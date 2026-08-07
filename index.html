@@ -380,6 +380,9 @@
                     <p class="text-slate-500 text-sm">أضف وأدر الدورات الخاصة بك وقيم اشتراكات الطلاب</p>
                 </div>
                 <div class="flex items-center gap-3">
+                    <button onclick="openTeacherLiveChatPanel()" class="bg-emerald-600 text-white font-bold px-4 py-2.5 rounded-xl text-xs hover:bg-emerald-700 transition flex items-center gap-2">
+                        <i class="fa-solid fa-comment-dots"></i> بدء محادثة
+                    </button>
                     <button onclick="openEditTeacherProfileModal()" class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 font-bold px-4 py-2.5 rounded-xl text-xs hover:bg-slate-200 dark:hover:bg-slate-600 transition flex items-center gap-2">
                         <i class="fa-solid fa-user-pen"></i> تعديل صورتي وملاحظاتي
                     </button>
@@ -488,6 +491,42 @@
             </div>
         </section>
     </main>
+
+    <div id="teacher-live-chat-overlay" class="fixed inset-0 z-[200] hidden bg-slate-950/95 backdrop-blur-xl">
+        <div class="flex h-full w-full flex-col">
+            <div class="flex items-center justify-between border-b border-slate-800 px-4 py-4 text-white">
+                <div>
+                    <p class="text-lg font-black">محادثة الحصة المباشرة</p>
+                    <p id="teacher-live-chat-overlay-status" class="text-sm text-slate-400">ابدأ المحادثة لعرض الرسائل</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="teacher-live-chat-fullscreen-btn" type="button" class="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-bold text-slate-200">فول سكرين</button>
+                    <button onclick="closeTeacherLiveChatPanel()" type="button" class="rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm font-bold text-slate-200">إغلاق</button>
+                </div>
+            </div>
+            <div class="flex-1 overflow-hidden bg-slate-900/80 p-4">
+                <div class="mx-auto flex h-full w-full max-w-5xl flex-col rounded-[32px] border border-slate-800 bg-slate-950/90 shadow-2xl">
+                    <div class="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+                        <div>
+                            <p class="text-sm font-bold text-white">الرسائل الواردة</p>
+                            <p class="text-xs text-slate-400">كل رسالة تظهر باسم صاحبها</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button id="teacher-live-chat-start-btn" type="button" class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white">بدء محادثة</button>
+                            <button id="teacher-live-chat-end-btn" type="button" class="rounded-xl bg-rose-600 px-4 py-2 text-sm font-bold text-white">إنهاء</button>
+                        </div>
+                    </div>
+                    <div id="teacher-live-chat-messages" class="flex-1 overflow-y-auto px-4 py-4 space-y-3"></div>
+                    <div class="border-t border-slate-800 p-4">
+                        <form id="teacher-live-chat-form" class="flex gap-2">
+                            <input id="teacher-live-chat-input" type="text" placeholder="اكتب رسالة للطلاب..." class="flex-1 rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-white outline-none focus:border-brand-primary" />
+                            <button type="submit" class="rounded-2xl bg-brand-primary px-4 py-3 text-sm font-bold text-white">إرسال</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- ROLE SELECTION MODAL -->
     <div id="role-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
@@ -760,6 +799,34 @@
                 <i class="fa-solid fa-play"></i>
             </div>
 
+            <div id="viewer-chat-panel" class="absolute left-3 bottom-20 z-40 hidden w-[min(88vw,22rem)] max-h-[min(70vh,22rem)] rounded-[24px] border border-slate-700/80 bg-slate-900/95 shadow-2xl backdrop-blur-xl flex-col overflow-hidden">
+                <div class="flex items-center justify-between px-3 py-2.5 border-b border-slate-800">
+                    <div>
+                        <p class="text-sm font-bold text-white">رسائل الحصة</p>
+                        <p id="viewer-chat-status" class="text-[11px] text-slate-400">المدرس لم يفتح المحادثة بعد</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div id="viewer-chat-cooldown" class="relative flex h-8 w-8 items-center justify-center rounded-full border border-slate-700 bg-slate-800/70">
+                            <svg class="h-8 w-8 -rotate-90" viewBox="0 0 36 36">
+                                <circle cx="18" cy="18" r="14" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="2"></circle>
+                                <circle id="viewer-chat-cooldown-progress" cx="18" cy="18" r="14" fill="none" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-dasharray="87.96" stroke-dashoffset="87.96"></circle>
+                            </svg>
+                            <span id="viewer-chat-cooldown-text" class="absolute text-[10px] font-bold text-white">60</span>
+                        </div>
+                        <button id="btn-close-viewer-chat" type="button" class="text-slate-400 hover:text-white">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="viewer-chat-messages" class="hidden"></div>
+                <div class="border-t border-slate-800 p-3">
+                    <form id="viewer-chat-form" class="space-y-2">
+                        <textarea id="viewer-chat-input" rows="2" placeholder="المدرس لم يفتح المحادثة بعد" class="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-white outline-none resize-none focus:border-brand-primary" disabled></textarea>
+                        <button type="submit" id="viewer-chat-submit" class="w-full rounded-xl bg-brand-primary px-3 py-2 text-sm font-bold text-white disabled:opacity-60" disabled>إرسال</button>
+                    </form>
+                </div>
+            </div>
+
             <!-- Control Bar -->
             <div id="video-control-bar" class="absolute bottom-3 left-3 right-3 z-30 flex flex-row-reverse items-center justify-between gap-3 px-4 py-2.5 rounded-2xl bg-slate-900/85 border border-slate-700/80 backdrop-blur-md shadow-2xl transition-all duration-500 ease-out opacity-100 translate-y-0 pointer-events-auto">
                 
@@ -792,6 +859,9 @@
 
                 <!-- Settings & system — يسار في RTL -->
                 <div class="cb-settings flex items-center gap-2 shrink-0">
+                    <button id="btn-viewer-chat-toggle" type="button" class="w-8 h-8 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 flex items-center justify-center text-xs transition" title="رسائل الحصة">
+                        <i class="fa-solid fa-comment-dots"></i>
+                    </button>
                     <div class="relative inline-flex items-center">
                         <button id="btn-settings-toggle" type="button" class="w-8 h-8 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700 text-slate-200 flex items-center justify-center text-xs transition">
                             <i class="fa-solid fa-gear"></i>
@@ -1392,6 +1462,7 @@
         function initPlatformSystem() {
             checkPersistedUser();
             initPromoPlayer();
+            initLiveLessonChatUI();
         }
 
         function initPromoPlayer() {
@@ -1980,6 +2051,15 @@ let currentSpeed = 1;
 let currentQuality = 'auto';
 let currentLessonType = 'video'; // Track if current lesson is live or video
 let lastLiveEdgeTime = 0;
+let liveLessonChatActive = false;
+let liveLessonChatMessages = [];
+let liveLessonChatConversationId = 'global-live-lesson-chat';
+let liveLessonChatSessionUnsubscribe = null;
+let liveLessonChatMessagesUnsubscribe = null;
+let liveLessonChatBroadcast = null;
+let viewerChatCooldownTimer = null;
+let viewerChatCooldownSeconds = 60;
+let viewerChatCooldownActive = false;
 
 // Extraction helper for YouTube ID - supports all YouTube URL formats
 function extractYouTubeId(url) {
@@ -2032,10 +2112,63 @@ function ensureYouTubeApi(callback) {
     };
 }
 
+function buildLiveLessonChatConversationId() {
+    return 'global-live-lesson-chat';
+}
+
+function initLiveLessonChatBroadcast() {
+    if (liveLessonChatBroadcast) return;
+    if (typeof BroadcastChannel !== 'undefined') {
+        liveLessonChatBroadcast = new BroadcastChannel('masar-live-lesson-chat');
+        liveLessonChatBroadcast.onmessage = (event) => {
+            if (!event.data || event.data.conversationId !== liveLessonChatConversationId) return;
+            if (event.data.type === 'state') {
+                liveLessonChatActive = !!event.data.isActive;
+                updateViewerChatState();
+                renderTeacherLiveChatMessages();
+            }
+        };
+    }
+
+    window.addEventListener('storage', (event) => {
+        if (event.key !== 'masar-live-lesson-chat-state') return;
+        try {
+            const payload = JSON.parse(event.newValue || '{}');
+            if (payload.conversationId !== liveLessonChatConversationId) return;
+            liveLessonChatActive = !!payload.isActive;
+            updateViewerChatState();
+            renderTeacherLiveChatMessages();
+        } catch (error) {
+            console.error('Storage sync failed:', error);
+        }
+    });
+}
+
+function broadcastLiveLessonChatState() {
+    const payload = {
+        type: 'state',
+        conversationId: liveLessonChatConversationId,
+        isActive: liveLessonChatActive
+    };
+    if (liveLessonChatBroadcast) {
+        liveLessonChatBroadcast.postMessage(payload);
+    }
+    try {
+        localStorage.setItem('masar-live-lesson-chat-state', JSON.stringify(payload));
+    } catch (error) {
+        console.error('Save chat state failed:', error);
+    }
+}
+
 // Function to Open the Custom Player Modal
 window.openCustomPlayer = function(videoUrl, lessonTitle, lessonType = 'video') {
     currentLessonType = lessonType; // Store lesson type globally
     lastLiveEdgeTime = 0;
+    liveLessonChatConversationId = buildLiveLessonChatConversationId(lessonTitle);
+    liveLessonChatActive = false;
+    liveLessonChatMessages = [];
+    renderViewerChatMessages();
+    resetViewerChatPanelState();
     
     const modal = document.getElementById('fullscreen-player-modal');
     const titleElem = document.getElementById('fs-lesson-title');
@@ -2075,15 +2208,8 @@ window.openCustomPlayer = function(videoUrl, lessonTitle, lessonType = 'video') 
     const videoId = extractYouTubeId(videoUrl);
     const isYouTubeUrl = videoUrl && (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be'));
 
-    console.log('=== Player Init ===' );
-    console.log('Lesson Type:', lessonType);
-    console.log('Video URL:', videoUrl);
-    console.log('Extracted ID:', videoId);
-    console.log('Is YouTube URL:', isYouTubeUrl);
-
     // Handle YouTube URLs
     if (isYouTubeUrl && videoId) {
-        console.log('Loading YouTube player...');
         
         stage.innerHTML = `<div id="yt-player-instance" class="w-full h-full"></div>`;
         
@@ -2177,6 +2303,348 @@ window.openCustomPlayer = function(videoUrl, lessonTitle, lessonType = 'video') 
     }
     syncFullscreenButtonIcon();
 };
+
+function resetViewerChatPanelState() {
+    const panel = document.getElementById('viewer-chat-panel');
+    const input = document.getElementById('viewer-chat-input');
+    const submit = document.getElementById('viewer-chat-submit');
+    const status = document.getElementById('viewer-chat-status');
+    resetViewerChatCooldown();
+    if (panel) {
+        panel.classList.add('hidden');
+        panel.classList.remove('flex');
+    }
+    if (input) {
+        input.disabled = true;
+        input.placeholder = 'المدرس لم يفتح المحادثة بعد';
+        input.value = '';
+    }
+    if (submit) {
+        submit.disabled = true;
+    }
+    if (status) {
+        status.textContent = 'المدرس لم يفتح المحادثة بعد';
+    }
+}
+
+function initLiveLessonChatUI() {
+    initLiveLessonChatBroadcast();
+
+    const viewerToggle = document.getElementById('btn-viewer-chat-toggle');
+    const viewerPanel = document.getElementById('viewer-chat-panel');
+    const viewerClose = document.getElementById('btn-close-viewer-chat');
+    const viewerForm = document.getElementById('viewer-chat-form');
+    const viewerInput = document.getElementById('viewer-chat-input');
+    const viewerSubmit = document.getElementById('viewer-chat-submit');
+    const teacherOverlay = document.getElementById('teacher-live-chat-overlay');
+    const teacherOverlayStatus = document.getElementById('teacher-live-chat-overlay-status');
+    const teacherStartBtn = document.getElementById('teacher-live-chat-start-btn');
+    const teacherEndBtn = document.getElementById('teacher-live-chat-end-btn');
+    const teacherForm = document.getElementById('teacher-live-chat-form');
+    const teacherInput = document.getElementById('teacher-live-chat-input');
+    const teacherMessages = document.getElementById('teacher-live-chat-messages');
+    const teacherFullscreenBtn = document.getElementById('teacher-live-chat-fullscreen-btn');
+
+    if (viewerToggle && viewerPanel) {
+        viewerToggle.onclick = () => {
+            const shouldOpen = viewerPanel.classList.contains('hidden');
+            viewerPanel.classList.toggle('hidden', !shouldOpen);
+            viewerPanel.classList.toggle('flex', shouldOpen);
+            if (shouldOpen) {
+                renderViewerChatMessages();
+                updateViewerChatState();
+            }
+        };
+    }
+
+    if (viewerClose) {
+        viewerClose.onclick = () => {
+            viewerPanel.classList.add('hidden');
+            viewerPanel.classList.remove('flex');
+        };
+    }
+
+    if (viewerForm && viewerInput && viewerSubmit) {
+        viewerForm.onsubmit = async (e) => {
+            e.preventDefault();
+            if (!window.db || !window.fs) return;
+            const text = viewerInput.value.trim();
+            if (!text || !liveLessonChatActive || viewerChatCooldownActive) return;
+            try {
+                const timestamp = window.fs.serverTimestamp ? window.fs.serverTimestamp() : new Date();
+                await window.fs.addDoc(window.fs.collection(window.db, 'lesson_live_chat'), {
+                    conversationId: liveLessonChatConversationId,
+                    sender: 'viewer',
+                    senderName: activeUser?.name || 'طالب',
+                    text,
+                    createdAt: timestamp
+                });
+                viewerInput.value = '';
+                startViewerChatCooldown();
+            } catch (error) {
+                console.error('Viewer chat send failed:', error);
+            }
+        };
+    }
+
+    if (teacherOverlay && teacherOverlayStatus && teacherStartBtn && teacherEndBtn && teacherForm && teacherInput && teacherMessages) {
+        teacherStartBtn.onclick = async () => {
+            if (!window.db || !window.fs) return;
+            if (!activeUser || activeUser.role !== 'teacher') return;
+            const sessionRef = window.fs.doc(window.db, 'lesson_chat_sessions', liveLessonChatConversationId);
+            await window.fs.setDoc(sessionRef, {
+                conversationId: liveLessonChatConversationId,
+                isActive: true,
+                startedAt: new Date(),
+                teacherName: activeUser.name || 'المعلم'
+            });
+            liveLessonChatActive = true;
+            broadcastLiveLessonChatState();
+            await refreshLiveLessonChatState();
+        };
+
+        teacherEndBtn.onclick = async () => {
+            if (!window.db || !window.fs) return;
+            if (!activeUser || activeUser.role !== 'teacher') return;
+            const sessionRef = window.fs.doc(window.db, 'lesson_chat_sessions', liveLessonChatConversationId);
+            await window.fs.setDoc(sessionRef, {
+                conversationId: liveLessonChatConversationId,
+                isActive: false,
+                endedAt: new Date(),
+                teacherName: activeUser.name || 'المعلم'
+            });
+            liveLessonChatActive = false;
+            broadcastLiveLessonChatState();
+            await refreshLiveLessonChatState();
+            const q = window.fs.query(window.fs.collection(window.db, 'lesson_live_chat'), window.fs.where('conversationId', '==', liveLessonChatConversationId));
+            const snap = await window.fs.getDocs(q);
+            await Promise.all(snap.docs.map(docSnap => window.fs.deleteDoc(window.fs.doc(window.db, 'lesson_live_chat', docSnap.id))));
+        };
+
+        teacherForm.onsubmit = async (e) => {
+            e.preventDefault();
+            if (!window.db || !window.fs) return;
+            const text = teacherInput.value.trim();
+            if (!text) return;
+            if (!liveLessonChatActive) {
+                teacherOverlayStatus.textContent = 'ابدأ المحادثة أولاً';
+                return;
+            }
+            await window.fs.addDoc(window.fs.collection(window.db, 'lesson_live_chat'), {
+                conversationId: liveLessonChatConversationId,
+                sender: 'teacher',
+                senderName: activeUser?.name || 'المعلم',
+                text,
+                createdAt: new Date()
+            });
+            teacherInput.value = '';
+        };
+
+        if (teacherFullscreenBtn) {
+            teacherFullscreenBtn.onclick = () => {
+                if (!document.fullscreenElement) {
+                    teacherOverlay.requestFullscreen?.().catch(() => {});
+                } else {
+                    document.exitFullscreen?.();
+                }
+            };
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            if (!teacherFullscreenBtn || !teacherOverlay) return;
+            const isFullscreen = document.fullscreenElement === teacherOverlay;
+            teacherFullscreenBtn.textContent = isFullscreen ? 'خروج' : 'فول سكرين';
+        });
+    }
+
+    subscribeToLiveLessonChat();
+    updateViewerChatState();
+    renderViewerChatMessages();
+    renderTeacherLiveChatMessages();
+}
+
+function updateViewerChatCooldownUI() {
+    const wrap = document.getElementById('viewer-chat-cooldown');
+    const progress = document.getElementById('viewer-chat-cooldown-progress');
+    const text = document.getElementById('viewer-chat-cooldown-text');
+    if (!wrap || !progress || !text) return;
+
+    const circumference = 2 * Math.PI * 14;
+    const progressRatio = viewerChatCooldownActive ? viewerChatCooldownSeconds / 60 : 1;
+    const dashOffset = circumference * (1 - progressRatio);
+    progress.style.strokeDasharray = circumference;
+    progress.style.strokeDashoffset = dashOffset;
+    text.textContent = viewerChatCooldownActive ? viewerChatCooldownSeconds : '60';
+}
+
+function resetViewerChatCooldown() {
+    if (viewerChatCooldownTimer) {
+        clearInterval(viewerChatCooldownTimer);
+        viewerChatCooldownTimer = null;
+    }
+    viewerChatCooldownActive = false;
+    viewerChatCooldownSeconds = 60;
+    updateViewerChatCooldownUI();
+}
+
+function startViewerChatCooldown() {
+    viewerChatCooldownActive = true;
+    viewerChatCooldownSeconds = 60;
+    updateViewerChatCooldownUI();
+    if (viewerChatCooldownTimer) {
+        clearInterval(viewerChatCooldownTimer);
+    }
+    viewerChatCooldownTimer = setInterval(() => {
+        viewerChatCooldownSeconds -= 1;
+        if (viewerChatCooldownSeconds <= 0) {
+            clearInterval(viewerChatCooldownTimer);
+            viewerChatCooldownTimer = null;
+            viewerChatCooldownActive = false;
+            viewerChatCooldownSeconds = 0;
+        }
+        updateViewerChatCooldownUI();
+        updateViewerChatState();
+    }, 1000);
+}
+
+function updateViewerChatState() {
+    const panel = document.getElementById('viewer-chat-panel');
+    const input = document.getElementById('viewer-chat-input');
+    const submit = document.getElementById('viewer-chat-submit');
+    const status = document.getElementById('viewer-chat-status');
+    const teacherOverlayStatus = document.getElementById('teacher-live-chat-overlay-status');
+    if (!panel || !input || !submit || !status) return;
+
+    if (liveLessonChatActive) {
+        input.disabled = false;
+        input.placeholder = 'اكتب رسالة للمعلم...';
+        submit.disabled = viewerChatCooldownActive;
+        status.textContent = viewerChatCooldownActive ? `يمكنك الإرسال بعد ${viewerChatCooldownSeconds} ثانية` : 'المحادثة مفتوحة الآن';
+    } else {
+        input.disabled = true;
+        input.placeholder = 'المدرس لم يفتح المحادثة بعد';
+        input.value = '';
+        submit.disabled = true;
+        status.textContent = 'المدرس لم يفتح المحادثة بعد';
+    }
+
+    if (teacherOverlayStatus) {
+        teacherOverlayStatus.textContent = liveLessonChatActive ? 'المحادثة نشطة الآن' : 'ابدأ المحادثة لعرض الرسائل';
+    }
+
+    updateViewerChatCooldownUI();
+}
+
+function renderViewerChatMessages() {
+    const container = document.getElementById('viewer-chat-messages');
+    if (!container) return;
+    container.innerHTML = '';
+    container.classList.add('hidden');
+}
+
+function renderTeacherLiveChatMessages() {
+    const container = document.getElementById('teacher-live-chat-messages');
+    if (!container) return;
+
+    if (!liveLessonChatMessages.length) {
+        container.innerHTML = '<div class="rounded-2xl border border-dashed border-slate-700 bg-slate-900/70 p-4 text-center text-sm text-slate-400">لا توجد رسائل بعد</div>';
+        return;
+    }
+
+    container.innerHTML = liveLessonChatMessages.map(message => {
+        const isTeacher = message.sender === 'teacher';
+        const bubbleClass = isTeacher ? 'bg-emerald-600/20 border-emerald-500/30 text-white' : 'bg-slate-800/80 border-slate-700 text-slate-100';
+        const time = message.createdAt && typeof message.createdAt.toDate === 'function' ? message.createdAt.toDate() : new Date(message.createdAt || Date.now());
+        return `
+            <div class="rounded-2xl border ${bubbleClass} px-3 py-2 text-sm">
+                <div class="flex items-center justify-between gap-2 mb-1">
+                    <span class="font-bold text-[12px]">${message.senderName || 'رسالة'}</span>
+                    <span class="text-[10px] opacity-70">${time.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <div class="leading-relaxed text-[13px]">${message.text}</div>
+            </div>
+        `;
+    }).join('');
+    container.scrollTop = container.scrollHeight;
+}
+
+async function refreshLiveLessonChatState() {
+    if (!window.db || !window.fs || !liveLessonChatConversationId) return;
+    const sessionRef = window.fs.doc(window.db, 'lesson_chat_sessions', liveLessonChatConversationId);
+    try {
+        const snap = await window.fs.getDoc(sessionRef);
+        const data = snap.exists ? snap.data() : null;
+        liveLessonChatActive = !!(data && data.isActive);
+        updateViewerChatState();
+        renderTeacherLiveChatMessages();
+    } catch (error) {
+        console.error('Live lesson chat state refresh failed:', error);
+    }
+}
+
+function subscribeToLiveLessonChat() {
+    if (liveLessonChatSessionUnsubscribe) {
+        liveLessonChatSessionUnsubscribe();
+        liveLessonChatSessionUnsubscribe = null;
+    }
+    if (liveLessonChatMessagesUnsubscribe) {
+        liveLessonChatMessagesUnsubscribe();
+        liveLessonChatMessagesUnsubscribe = null;
+    }
+
+    if (!window.db || !window.fs || !liveLessonChatConversationId) return;
+
+    const sessionRef = window.fs.doc(window.db, 'lesson_chat_sessions', liveLessonChatConversationId);
+    liveLessonChatSessionUnsubscribe = window.fs.onSnapshot(sessionRef, (snap) => {
+        const data = snap.exists ? snap.data() : null;
+        liveLessonChatActive = !!(data && data.isActive);
+        broadcastLiveLessonChatState();
+        updateViewerChatState();
+        renderTeacherLiveChatMessages();
+    });
+
+    const q = window.fs.query(window.fs.collection(window.db, 'lesson_live_chat'), window.fs.where('conversationId', '==', liveLessonChatConversationId));
+    liveLessonChatMessagesUnsubscribe = window.fs.onSnapshot(q, (snapshot) => {
+        liveLessonChatMessages = [];
+        snapshot.forEach(docSnap => {
+            liveLessonChatMessages.push({ id: docSnap.id, ...docSnap.data() });
+        });
+        liveLessonChatMessages.sort((a, b) => {
+            const aTime = a.createdAt && typeof a.createdAt.toDate === 'function' ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+            const bTime = b.createdAt && typeof b.createdAt.toDate === 'function' ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+            return aTime - bTime;
+        });
+        renderViewerChatMessages();
+        renderTeacherLiveChatMessages();
+    });
+}
+
+function openTeacherLiveChatPanel() {
+    const overlay = document.getElementById('teacher-live-chat-overlay');
+    if (overlay) {
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+    }
+    if (!liveLessonChatConversationId) {
+        const lessonTitle = document.getElementById('fs-lesson-title')?.textContent || 'lesson';
+        liveLessonChatConversationId = buildLiveLessonChatConversationId();
+    }
+    subscribeToLiveLessonChat();
+    refreshLiveLessonChatState();
+    updateViewerChatState();
+    renderTeacherLiveChatMessages();
+}
+
+function closeTeacherLiveChatPanel() {
+    const overlay = document.getElementById('teacher-live-chat-overlay');
+    if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('flex');
+    }
+    if (document.fullscreenElement && document.fullscreenElement.id === 'teacher-live-chat-overlay') {
+        document.exitFullscreen?.();
+    }
+}
 
 function isFiniteNumber(value) {
     return typeof value === 'number' && Number.isFinite(value);
