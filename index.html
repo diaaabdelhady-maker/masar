@@ -280,6 +280,38 @@
         </div>
     </div>
 
+    <!-- Telegram Group Join Modal -->
+    <div id="telegram-group-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[155] hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 max-w-sm w-full relative shadow-2xl text-center transform transition-all">
+            <button onclick="closeModal('telegram-group-modal')" class="absolute top-4 left-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="w-14 h-14 rounded-2xl bg-brand-primary/10 text-brand-primary flex items-center justify-center mx-auto mb-4 text-2xl logo-en font-black">
+                m
+            </div>
+
+            <span class="logo-en block text-2xl font-extrabold text-brand-dark dark:text-white tracking-tight">
+                masar<span class="text-brand-primary">.</span>
+            </span>
+
+            <hr class="my-3 border-slate-200 dark:border-slate-700">
+
+            <span class="block text-sm font-bold tracking-[0.25em] text-slate-500 dark:text-slate-400">مسار</span>
+            <p class="text-xs text-slate-400 dark:text-slate-500 mt-2 mb-5">جروب المنصة الرسمي على تليجرام (معلمين وطلاب)</p>
+
+            <a href="#" id="telegram-group-join-link" target="_blank" rel="noopener" onclick="markTelegramGroupJoined()"
+               class="flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-2xl transition mb-4">
+                <i class="fa-brands fa-telegram text-lg"></i> انضم الآن
+            </a>
+
+            <label class="flex items-center justify-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 cursor-pointer select-none">
+                <input type="checkbox" id="telegram-joined-checkbox" onchange="handleTelegramJoinedCheckbox(this)" class="w-4 h-4 rounded accent-brand-primary cursor-pointer">
+                تم الانضمام
+            </label>
+        </div>
+    </div>
+
     <!-- Loading Overlay: shown the instant a form is submitted to the server, until the request finishes -->
     <div id="loading-overlay-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[160] hidden items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-xs w-full shadow-2xl text-center">
@@ -361,10 +393,20 @@
                 <i class="fa-solid fa-arrow-right"></i> العودة لقائمة الدورات
             </button>
             <div id="course-details-header" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-8 rounded-3xl shadow-sm mb-8"></div>
-            <h3 class="text-2xl font-black mb-4 flex items-center gap-2">
-                <i class="fa-solid fa-list-check text-brand-primary"></i> حصص الدورة
-            </h3>
+
+            <div class="flex items-center gap-3 mb-6">
+                <button id="course-tab-btn-lessons" onclick="switchCourseDetailsTab('lessons')"
+                        class="course-details-tab-btn flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black bg-brand-primary text-white shadow-md transition">
+                    <i class="fa-solid fa-list-check"></i> الحصص
+                </button>
+                <button id="course-tab-btn-documents" onclick="switchCourseDetailsTab('documents')"
+                        class="course-details-tab-btn flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 transition">
+                    <i class="fa-solid fa-file-lines"></i> المستندات
+                </button>
+            </div>
+
             <div id="course-lessons-container" class="space-y-4"></div>
+            <div id="course-documents-container" class="space-y-4 hidden"></div>
         </section>
 
         <!-- 3. TEACHERS VIEW -->
@@ -1229,12 +1271,19 @@
             padding-bottom: 0.5rem;
         }
 
-        /* Header (top navbar) settings menu: constrained so it can never spill off-screen */
+        /* Header (top navbar) settings menu: pinned just below the header with safe
+           side margins from the viewport itself (not from the gear button), so it
+           can never spill off-screen no matter where the button lands in RTL */
         #settings-menu {
-            left: auto;
-            right: 0;
-            width: calc(100vw - 1.5rem);
-            max-width: 16rem;
+            position: fixed;
+            top: 4.75rem;
+            left: 0.75rem;
+            right: 0.75rem;
+            width: auto;
+            max-width: none;
+            margin-top: 0;
+            max-height: calc(100vh - 5.5rem);
+            overflow-y: auto;
         }
     }
 </style>
@@ -1403,6 +1452,43 @@
         </div>
     </div>
 
+    <!-- DOCUMENT UPLOAD MODAL - رفع مستند الدورة على Google Drive -->
+    <div id="document-upload-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full relative shadow-2xl">
+            <button onclick="closeDocumentUploadModal()" class="absolute top-5 left-5 text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="text-2xl font-bold text-brand-dark dark:text-white mb-1 text-center">رفع مستند جديد</h3>
+            <p class="text-xs text-center text-slate-500 dark:text-slate-400 mb-4">اختر الملف وسيتم رفعه مباشرة وإضافته لقائمة مستندات الدورة</p>
+
+            <input type="hidden" id="document-course-id">
+
+            <div class="relative border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-2xl p-6 text-center bg-slate-50 dark:bg-slate-700/40 hover:border-brand-primary hover:bg-indigo-50/50 dark:hover:bg-slate-700/70 transition cursor-pointer">
+                <div class="text-3xl mb-2 text-slate-400"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                <span id="document-file-label" class="text-xs font-bold text-slate-500 dark:text-slate-400">اضغط هنا لتحديد ملف المستند</span>
+                <div id="document-file-name" class="mt-2 text-xs font-bold text-brand-primary break-all"></div>
+                <input type="file" id="document-file-input" onchange="handleDocumentFileSelect()" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+            </div>
+
+            <div id="document-progress-container" class="mt-5 hidden">
+                <div class="flex justify-between mb-1.5 text-xs font-bold text-slate-500 dark:text-slate-400">
+                    <span id="document-status-text">جاري المعالجة...</span>
+                    <span id="document-progress-percent">0%</span>
+                </div>
+                <div class="w-full h-2.5 bg-slate-200 dark:bg-slate-600 rounded-full overflow-hidden">
+                    <div id="document-progress-fill" class="h-full w-0 bg-gradient-to-l from-brand-primary to-brand-accent rounded-full transition-all"></div>
+                </div>
+            </div>
+
+            <button id="document-upload-btn" onclick="uploadCourseDocument()" disabled
+                    class="w-full mt-5 bg-brand-primary text-white py-3 rounded-xl font-bold disabled:bg-slate-300 dark:disabled:bg-slate-600 disabled:cursor-not-allowed">
+                ابدأ الرفع
+            </button>
+
+            <div id="document-result-message" class="mt-4 text-xs text-center break-all"></div>
+        </div>
+    </div>
+
     <div id="support-chat-modal" class="hidden fixed inset-0 z-[90]">
         <div id="support-chat-backdrop" onclick="closeSupportChatModal()" class="absolute inset-0 bg-slate-950/50 dark:bg-black/70 backdrop-blur-sm opacity-0 transition-opacity duration-300"></div>
         <div id="support-chat-panel" class="absolute inset-y-0 right-0 flex h-full w-full md:w-1/2 lg:w-[42%] max-w-2xl translate-x-full flex-col overflow-hidden bg-white dark:bg-slate-900 shadow-2xl transition-transform duration-300 ease-out">
@@ -1496,9 +1582,12 @@
         // جروب تنبيهات المنصة (للأونر) - بيستخدمه sendPlatformTelegramAlert (كورس جديد، اشتراكات، إلخ)
         const PLATFORM_TELEGRAM_INVITE_LINK = 'https://t.me/+2Ll7QGPAxwowNDRk';
         const PLATFORM_TELEGRAM_CHAT_ID = '-1004410499441';
-        // جروب الطلبة - بيستخدمه notifyTelegramNewLesson بس (إشعار حصة جديدة)
+        // جروب الطلبة - بيستخدمه notifyTelegramNewLesson و notifyTelegramNewDocument (إشعار حصة/مستند جديد)
         const STUDENTS_TELEGRAM_CHAT_ID = '-1003905839870';
         const TELEGRAM_BOT_TOKEN = '8800012522:AAGNIm28oqlQBKFNqFuYVcKpEkpEaZhWEeM';
+
+        // رابط Google Apps Script المسؤول عن رفع مستندات الدورات إلى Google Drive
+        const DOCUMENT_UPLOAD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwlwypDby34hal9eXAJJfvzGuxDcKGO3g0HUpYCCWIU2Yuq9YghfMogohs_voe3hhIt2g/exec';
 
         // ============================================================
         // إعدادات EmailJS - بيُستخدم لإرسال كلمة المرور على الجيميل عند "نسيت كلمة المرور"
@@ -1553,13 +1642,75 @@
             .catch(err => console.warn('تعذر إرسال إشعار تليجرام:', err));
         }
 
+        // يرسل إشعار مستند جديد إلى نفس جروب الطلبة اللي بيتبعت له إشعار الحصص (مش جروب الأونر)
+        function notifyTelegramNewDocument(courseTitle, documentTitle, teacherName = 'المعلم') {
+            const dateText = new Date().toLocaleString('ar-EG', {
+                dateStyle: 'medium',
+                timeStyle: 'short'
+            });
+            const text = `📄 تم رفع مستند جديد على منصة مسار\n\n👨‍🏫 المدرس: ${teacherName || 'المعلم'}\n📘 الدورة: ${courseTitle || 'غير محدد'}\n📎 المستند: ${documentTitle || 'غير محدد'}\n🕒 وقت الرفع: ${dateText}\n\n✨ يمكنك الآن الدخول إلى المنصة وتحميل المستند مباشرة من خلال حسابك.`;
+
+            fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: STUDENTS_TELEGRAM_CHAT_ID,
+                    text
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.ok) {
+                    console.warn('تعذر إرسال إشعار تليجرام:', data.description || 'خطأ غير معروف');
+                }
+            })
+            .catch(err => console.warn('تعذر إرسال إشعار تليجرام:', err));
+        }
+
         // هل المستخدم الحالي مستحق ينضم لجروب تليجرام الموحّد؟
         // شرط: معلم متوافق عليه، أو أونر، أو اشترى واتوافق عليه في أي كورس (مش شرط الكورس اللي هو فاتحه دلوقتي بالذات)
         function canJoinPlatformTelegramGroup() {
+            if (hasJoinedTelegramGroup()) return false;
             if (!activeUser) return false;
             if (activeUser.role === 'owner') return true;
             if (activeUser.role === 'teacher' && activeUser.status === 'approved') return true;
             return Object.values(userSubscriptions || {}).some(status => status === 'approved');
+        }
+
+        // بيرجع true لو المستخدم عمل تأكيد إنه انضم لجروب التليجرام (خلاص، زرار الانضمام يختفي من كل الكورسات)
+        function hasJoinedTelegramGroup() {
+            try {
+                return localStorage.getItem('masar_telegram_group_joined') === 'true';
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function openTelegramGroupModal() {
+            const link = document.getElementById('telegram-group-join-link');
+            const checkbox = document.getElementById('telegram-joined-checkbox');
+            if (link) link.href = PLATFORM_TELEGRAM_INVITE_LINK;
+            if (checkbox) checkbox.checked = hasJoinedTelegramGroup();
+
+            const modal = document.getElementById('telegram-group-modal');
+            if (!modal) return;
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function handleTelegramJoinedCheckbox(checkbox) {
+            if (checkbox && checkbox.checked) {
+                markTelegramGroupJoined();
+                setTimeout(() => closeModal('telegram-group-modal'), 400);
+            } else {
+                try { localStorage.removeItem('masar_telegram_group_joined'); } catch (e) {}
+            }
+        }
+
+        // يتخزن إن المستخدم انضم للجروب، وبيخلي زرار "انضم لجروب التليجرام" يختفي من كل الكورسات
+        function markTelegramGroupJoined() {
+            try { localStorage.setItem('masar_telegram_group_joined', 'true'); } catch (e) {}
+            if (currentActiveCourseId) openCourseDetails(currentActiveCourseId);
         }
 
         let authFlow = 'login'; 
@@ -3921,6 +4072,19 @@ window.closeFullscreenPlayer = function() {
                         `;
                     });
 
+                    const documents = c.documents || [];
+                    let documentsListHtml = '';
+                    documents.forEach((d, index) => {
+                        documentsListHtml += `
+                            <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-700/50 p-2 rounded-xl text-xs">
+                                <span class="font-bold truncate max-w-[180px]"><i class="fa-solid fa-file-lines text-brand-primary ml-1"></i> ${d.name}</span>
+                                <button onclick="deleteCourseDocument('${cId}', ${index})" class="text-rose-500 hover:text-rose-700 font-bold">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                    });
+
                     teacherCoursesGrid.innerHTML += `
                         <div class="interactive-card bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
                             <div>
@@ -3933,13 +4097,23 @@ window.closeFullscreenPlayer = function() {
                                 </div>
                                 <p class="text-xs font-bold text-emerald-600 mb-2">السعر: ${c.price || 0} ج.م | فودافون: ${c.vodafoneNumber || 'غير محدد'}</p>
                                 <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">${c.desc}</p>
+                                <p class="text-[11px] font-black text-slate-500 dark:text-slate-400 mb-1.5">الحصص</p>
                                 <div class="space-y-2 mb-4">
                                     ${lessonsListHtml || '<p class="text-xs text-slate-400">لا توجد حصص مضافة بعد.</p>'}
                                 </div>
+                                <p class="text-[11px] font-black text-slate-500 dark:text-slate-400 mb-1.5">المستندات</p>
+                                <div class="space-y-2 mb-4">
+                                    ${documentsListHtml || '<p class="text-xs text-slate-400">لا توجد مستندات مرفوعة بعد.</p>'}
+                                </div>
                             </div>
-                            <button onclick="openLessonModal('${cId}')" class="w-full bg-brand-primary text-white text-xs font-bold py-2.5 rounded-xl hover:bg-indigo-700 transition">
-                                <i class="fa-solid fa-plus ml-1"></i> إضافة حصة جديدة
-                            </button>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="openLessonModal('${cId}')" class="w-full bg-brand-primary text-white text-xs font-bold py-2.5 rounded-xl hover:bg-indigo-700 transition">
+                                    <i class="fa-solid fa-plus ml-1"></i> إضافة حصة
+                                </button>
+                                <button onclick="openDocumentUploadModal('${cId}')" class="w-full bg-brand-accent text-white text-xs font-bold py-2.5 rounded-xl hover:bg-cyan-700 transition">
+                                    <i class="fa-solid fa-file-arrow-up ml-1"></i> رفع مستند
+                                </button>
+                            </div>
                         </div>
                     `;
                 }
@@ -4023,7 +4197,6 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
                             </span>
                         </div>
                         ${c.image ? `<img onclick="openCourseDetails('${c.id}')" src="${c.image}" class="w-full h-44 object-cover rounded-2xl mb-4 cursor-pointer" alt="${c.title}">` : ''}
-                        <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-3 mb-4">${c.desc}</p>
                     </div>
 
                     <div>
@@ -4431,6 +4604,43 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
             );
         }
 
+        function adjustCourseDescriptionOverflow() {
+            const shortEl = document.getElementById('course-desc-short');
+            const toggleBtn = document.getElementById('course-desc-toggle-btn');
+            const fadeEl = document.getElementById('course-desc-fade');
+            if (!shortEl) return;
+
+            // لو النص أطول من المساحة المتاحة (80% من ارتفاع الصورة) نظهر التلاشي وزرار "المزيد"
+            const isOverflowing = shortEl.scrollHeight > shortEl.clientHeight + 2;
+            if (toggleBtn) toggleBtn.classList.toggle('hidden', !isOverflowing);
+            if (fadeEl) fadeEl.classList.toggle('hidden', !isOverflowing);
+        }
+
+        window.addEventListener('resize', () => {
+            if (document.getElementById('course-desc-short')) adjustCourseDescriptionOverflow();
+        });
+
+        function toggleCourseDescription() {
+            const shortEl = document.getElementById('course-desc-short');
+            const fullEl = document.getElementById('course-desc-full');
+            const btn = document.getElementById('course-desc-toggle-btn');
+            const fadeEl = document.getElementById('course-desc-fade');
+            if (!shortEl || !fullEl || !btn) return;
+
+            const isExpanded = !fullEl.classList.contains('hidden');
+            if (isExpanded) {
+                fullEl.classList.add('hidden');
+                shortEl.classList.remove('hidden');
+                if (fadeEl) fadeEl.classList.remove('hidden');
+                btn.innerText = 'المزيد';
+            } else {
+                fullEl.classList.remove('hidden');
+                shortEl.classList.add('hidden');
+                if (fadeEl) fadeEl.classList.add('hidden');
+                btn.innerText = 'عرض أقل';
+            }
+        }
+
         function openCourseDetails(courseId) {
             const course = globalCoursesData[courseId];
             if (!course) return;
@@ -4447,6 +4657,34 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
             const headerContainer = document.getElementById('course-details-header');
             const lessonsContainer = document.getElementById('course-lessons-container');
 
+            // زرار شراء الكورس تحت الصورة (بنفس منطق كارت الكورس في صفحة تصفح الدورات)
+            let buyButtonHtml = '';
+            if (isTeacherOwner) {
+                buyButtonHtml = `
+                    <span class="mt-4 flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold py-3 rounded-2xl">
+                        <i class="fa-solid fa-chalkboard-user"></i> أنت معلم هذا الكورس
+                    </span>`;
+            } else if (isSubscribed) {
+                buyButtonHtml = `
+                    <span class="mt-4 flex items-center justify-center gap-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/30 font-bold py-3 rounded-2xl">
+                        <i class="fa-solid fa-circle-check"></i> أنت مشترك في هذا الكورس
+                    </span>`;
+            } else if (userSubscriptions[courseId] === 'pending') {
+                buyButtonHtml = `
+                    <span class="mt-4 flex items-center justify-center gap-2 bg-amber-100 text-amber-700 font-bold py-3 rounded-2xl">
+                        <i class="fa-solid fa-clock"></i> بانتظار موافقة المدرس
+                    </span>`;
+            } else {
+                buyButtonHtml = `
+                    <button onclick="openPaymentModal('${courseId}')"
+                            class="mt-4 w-full flex items-center justify-center gap-2 bg-brand-primary text-white font-bold py-3 rounded-2xl hover:bg-indigo-700 transition">
+                        <i class="fa-solid fa-cart-shopping"></i> شراء الكورس
+                    </button>`;
+            }
+
+            // الوصف بيتقص بارتفاع = 80% من ارتفاع الصورة، وبعدين زرار "المزيد"
+            const fullDesc = course.desc || '';
+
             headerContainer.innerHTML = `
                 <div class="flex justify-between items-start gap-4 mb-4">
                     <div>
@@ -4459,14 +4697,35 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
                         مادة: ${course.subject || 'عام'}
                     </span>
                 </div>
-                ${course.image ? `<img src="${course.image}" class="w-full max-h-64 object-cover rounded-2xl mb-4 shadow-sm" alt="${course.title}">` : ''}
-                <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">${course.desc}</p>
-                ${canJoinPlatformTelegramGroup() ? `
-                <a href="${PLATFORM_TELEGRAM_INVITE_LINK}" target="_blank" rel="noopener"
-                   class="mt-4 flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-2xl transition">
-                    <i class="fa-brands fa-telegram text-lg"></i> انضم لجروب مسار على تليجرام (معلمين وطلاب)
-                </a>` : ''}
+
+                <div class="grid md:grid-cols-2 gap-6 items-stretch">
+                    <div class="flex flex-col">
+                        ${course.image ? `<img src="${course.image}" class="w-full h-56 md:h-64 object-cover rounded-2xl shadow-sm" alt="${course.title}">` : ''}
+                        ${buyButtonHtml}
+                    </div>
+
+                    <div class="flex flex-col h-full">
+                        <div>
+                            <div class="relative">
+                                <p id="course-desc-short" class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed overflow-hidden max-h-[179px] md:max-h-[205px]">${fullDesc}</p>
+                                <div id="course-desc-fade" class="hidden pointer-events-none absolute bottom-0 inset-x-0 h-8 bg-gradient-to-t from-white dark:from-slate-800 to-transparent"></div>
+                            </div>
+                            <p id="course-desc-full" class="hidden text-sm text-slate-600 dark:text-slate-300 leading-relaxed">${fullDesc}</p>
+                            <button id="course-desc-toggle-btn" onclick="toggleCourseDescription()" class="hidden mt-1 text-brand-primary text-xs font-bold hover:underline">المزيد</button>
+                        </div>
+
+                        <div class="mt-auto pt-4">
+                            ${canJoinPlatformTelegramGroup() ? `
+                            <button onclick="openTelegramGroupModal()"
+                                    class="w-full flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-2xl transition">
+                                <i class="fa-brands fa-telegram text-lg"></i> انضم لجروب مسار على تليجرام (معلمين وطلاب)
+                            </button>` : ''}
+                        </div>
+                    </div>
+                </div>
             `;
+
+            requestAnimationFrame(adjustCourseDescriptionOverflow);
 
             const lessons = course.lessons || [];
             lessonsContainer.innerHTML = '';
@@ -4544,7 +4803,73 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
                 });
             }
 
+            const documents = course.documents || [];
+            const documentsContainer = document.getElementById('course-documents-container');
+            documentsContainer.innerHTML = '';
+
+            if (documents.length === 0) {
+                documentsContainer.innerHTML = `
+                    <div class="text-center py-12 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <i class="fa-solid fa-folder-open text-4xl text-slate-400 mb-3"></i>
+                        <p class="text-sm text-slate-400 font-bold">لم يتم رفع أي مستندات لهذه الدورة حتى الآن.</p>
+                    </div>
+                `;
+            } else {
+                documents.forEach((docItem) => {
+                    const safeName = (docItem.name || 'مستند').replace(/'/g, "\\'");
+                    documentsContainer.innerHTML += `
+                        <div class="interactive-card w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 rounded-2xl flex items-center justify-between gap-4">
+                            <div class="flex items-center gap-4 min-w-0">
+                                <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-slate-700 text-brand-primary flex items-center justify-center text-xl shrink-0">
+                                    <i class="fa-solid fa-file-lines"></i>
+                                </div>
+                                <h4 class="font-extrabold text-sm md:text-base text-slate-800 dark:text-white truncate">${docItem.name}</h4>
+                            </div>
+                            <div class="flex items-center gap-4 shrink-0">
+                                <button onclick="downloadCourseDocument('${docItem.url}', '${safeName}')" title="تنزيل الملف"
+                                        class="w-10 h-10 rounded-xl bg-brand-primary text-white flex items-center justify-center hover:bg-indigo-700 transition">
+                                    <i class="fa-solid fa-download"></i>
+                                </button>
+                                <a href="${docItem.url}" target="_blank" rel="noopener" title="عرض الملف"
+                                   class="text-slate-300 hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400 transition">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            switchCourseDetailsTab('lessons');
             navigateTo('course-details');
+        }
+
+        // تبديل تبويب "الحصص" / "المستندات" داخل صفحة تفاصيل الدورة
+        function switchCourseDetailsTab(tab) {
+            const lessonsBtn = document.getElementById('course-tab-btn-lessons');
+            const documentsBtn = document.getElementById('course-tab-btn-documents');
+            const lessonsContainer = document.getElementById('course-lessons-container');
+            const documentsContainer = document.getElementById('course-documents-container');
+            if (!lessonsBtn || !documentsBtn || !lessonsContainer || !documentsContainer) return;
+
+            const activeClasses = ['bg-brand-primary', 'text-white', 'shadow-md'];
+            const inactiveClasses = ['bg-slate-100', 'dark:bg-slate-700', 'text-slate-600', 'dark:text-slate-300'];
+
+            if (tab === 'documents') {
+                lessonsContainer.classList.add('hidden');
+                documentsContainer.classList.remove('hidden');
+                documentsBtn.classList.add(...activeClasses);
+                documentsBtn.classList.remove(...inactiveClasses);
+                lessonsBtn.classList.add(...inactiveClasses);
+                lessonsBtn.classList.remove(...activeClasses);
+            } else {
+                documentsContainer.classList.add('hidden');
+                lessonsContainer.classList.remove('hidden');
+                lessonsBtn.classList.add(...activeClasses);
+                lessonsBtn.classList.remove(...inactiveClasses);
+                documentsBtn.classList.add(...inactiveClasses);
+                documentsBtn.classList.remove(...activeClasses);
+            }
         }
 
         async function playLessonFullScreen(courseId, lessonIndex) {
@@ -4617,6 +4942,22 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
             loadPlatformData();
         }
 
+        async function deleteCourseDocument(courseId, documentIndex) {
+            const courseRef = window.fs.doc(window.db, "courses", courseId);
+            const coursesSnap = await window.fs.getDocs(window.fs.collection(window.db, "courses"));
+
+            let documents = [];
+            coursesSnap.forEach(docSnap => {
+                if (docSnap.id === courseId) {
+                    documents = docSnap.data().documents || [];
+                }
+            });
+
+            documents.splice(documentIndex, 1);
+            await window.fs.updateDoc(courseRef, { documents });
+            loadPlatformData();
+        }
+
         function openCourseModal() {
             document.getElementById('course-modal').classList.remove('hidden');
             document.getElementById('course-modal').classList.add('flex');
@@ -4659,7 +5000,8 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
                     teacherName: activeUser.name,
                     teacherEmail: activeUser.email,
                     teacherAvatar: activeUser.avatar || '',
-                    lessons: []
+                    lessons: [],
+                    documents: []
                 });
 
                 sendPlatformTelegramAlert(
@@ -4703,6 +5045,210 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
 
         function closeLessonModal() {
             closeModal('lesson-modal');
+        }
+
+        // ============================================================
+        // رفع مستندات الدورة (Google Drive عبر Apps Script) - يعتمد على نفس منطق try.html
+        // ============================================================
+        function openDocumentUploadModal(courseId) {
+            document.getElementById('document-course-id').value = courseId;
+            document.getElementById('document-file-input').value = '';
+            document.getElementById('document-file-name').innerText = '';
+            document.getElementById('document-file-label').style.display = 'inline';
+            document.getElementById('document-upload-btn').disabled = true;
+            document.getElementById('document-progress-container').classList.add('hidden');
+            document.getElementById('document-progress-fill').style.width = '0%';
+            document.getElementById('document-result-message').innerText = '';
+            document.getElementById('document-result-message').className = 'mt-4 text-xs text-center break-all';
+
+            document.getElementById('document-upload-modal').classList.remove('hidden');
+            document.getElementById('document-upload-modal').classList.add('flex');
+        }
+
+        function closeDocumentUploadModal() {
+            closeModal('document-upload-modal');
+        }
+
+        function handleDocumentFileSelect() {
+            const fileInput = document.getElementById('document-file-input');
+            const fileNameDiv = document.getElementById('document-file-name');
+            const labelText = document.getElementById('document-file-label');
+            const uploadBtn = document.getElementById('document-upload-btn');
+            const resultMessage = document.getElementById('document-result-message');
+
+            resultMessage.innerText = '';
+
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                fileNameDiv.innerText = `${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+                labelText.style.display = 'none';
+                uploadBtn.disabled = false;
+            } else {
+                fileNameDiv.innerText = '';
+                labelText.style.display = 'inline';
+                uploadBtn.disabled = true;
+            }
+        }
+
+        function updateDocumentUploadProgress(percent, status) {
+            const fill = document.getElementById('document-progress-fill');
+            const percentEl = document.getElementById('document-progress-percent');
+            const statusEl = document.getElementById('document-status-text');
+
+            fill.style.width = percent + '%';
+            percentEl.innerText = Math.round(percent) + '%';
+            if (status) statusEl.innerText = status;
+        }
+
+        async function uploadCourseDocument() {
+            const courseId = document.getElementById('document-course-id').value;
+            const fileInput = document.getElementById('document-file-input');
+            const uploadBtn = document.getElementById('document-upload-btn');
+            const progressContainer = document.getElementById('document-progress-container');
+            const resultMessage = document.getElementById('document-result-message');
+
+            const file = fileInput.files[0];
+            if (!file || !courseId) return;
+
+            uploadBtn.disabled = true;
+            progressContainer.classList.remove('hidden');
+            resultMessage.innerText = '';
+            resultMessage.className = 'mt-4 text-xs text-center break-all';
+            updateDocumentUploadProgress(0, 'جاري تجهيز الملف...');
+
+            const reader = new FileReader();
+
+            reader.onprogress = function (e) {
+                if (e.lengthComputable) {
+                    const loadedPercent = (e.loaded / e.total) * 50;
+                    updateDocumentUploadProgress(loadedPercent, 'جاري تحويل الملف...');
+                }
+            };
+
+            reader.onload = async function () {
+                updateDocumentUploadProgress(50, 'جاري الإرسال لـ Google Drive...');
+
+                const rawBase64 = reader.result.split(',')[1];
+                const payload = {
+                    fileName: file.name,
+                    mimeType: file.type,
+                    file: rawBase64
+                };
+
+                let simulatedProgress = 50;
+                const interval = setInterval(() => {
+                    if (simulatedProgress < 90) {
+                        simulatedProgress += 5;
+                        updateDocumentUploadProgress(simulatedProgress, 'جاري الرفع...');
+                    }
+                }, 300);
+
+                try {
+                    const response = await fetch(DOCUMENT_UPLOAD_SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify(payload)
+                    });
+
+                    clearInterval(interval);
+                    const result = await response.json();
+
+                    if (result.status === 'success') {
+                        updateDocumentUploadProgress(100, 'اكتمل الرفع!');
+                        await saveDocumentToCourse(courseId, file.name, result.fileUrl);
+
+                        resultMessage.className = 'mt-4 text-xs text-center break-all text-emerald-600 font-bold';
+                        resultMessage.innerText = 'تم رفع المستند بنجاح!';
+
+                        setTimeout(() => {
+                            closeDocumentUploadModal();
+                            showAppAlert('تم بنجاح', 'تم رفع المستند بنجاح!', 'success');
+                        }, 600);
+                    } else {
+                        throw new Error(result.message || 'حدث خطأ أثناء رفع المستند');
+                    }
+                } catch (error) {
+                    clearInterval(interval);
+                    updateDocumentUploadProgress(0, 'فشلت العملية');
+                    resultMessage.className = 'mt-4 text-xs text-center break-all text-rose-600 font-bold';
+                    resultMessage.innerText = 'عذراً، حدث خطأ: ' + error.message;
+                } finally {
+                    uploadBtn.disabled = false;
+                }
+            };
+
+            reader.onerror = function () {
+                updateDocumentUploadProgress(0, 'خطأ قراءة الملف');
+                resultMessage.className = 'mt-4 text-xs text-center break-all text-rose-600 font-bold';
+                resultMessage.innerText = 'فشل في قراءة الملف من الجهاز.';
+                uploadBtn.disabled = false;
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        // بعد نجاح الرفع على Drive: يحفظ رابط المستند داخل بيانات الدورة على Firestore ويبعت إشعار تليجرام لنفس جروب الحصص
+        async function saveDocumentToCourse(courseId, fileName, fileUrl) {
+            const courseRef = window.fs.doc(window.db, "courses", courseId);
+            const coursesSnap = await window.fs.getDocs(window.fs.collection(window.db, "courses"));
+
+            let documents = [];
+            let courseTitle = '';
+            coursesSnap.forEach(docSnap => {
+                if (docSnap.id === courseId) {
+                    const data = docSnap.data();
+                    documents = data.documents || [];
+                    courseTitle = data.title || '';
+                }
+            });
+
+            documents.push({
+                name: fileName,
+                url: fileUrl,
+                uploadedAt: new Date().toISOString()
+            });
+
+            await window.fs.updateDoc(courseRef, { documents });
+
+            notifyTelegramNewDocument(
+                courseTitle,
+                fileName,
+                activeUser && activeUser.name ? activeUser.name : 'المعلم'
+            );
+
+            loadPlatformData();
+        }
+
+        // يحوّل رابط عرض ملف Google Drive إلى رابط تنزيل مباشر للملف نفسه
+        function toDriveDirectDownloadUrl(fileUrl) {
+            if (!fileUrl) return fileUrl;
+            const match = fileUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || fileUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+            const fileId = match ? match[1] : null;
+            return fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : fileUrl;
+        }
+
+        // تنزيل المستند مباشرة على جهاز المستخدم من غير ما يتنقل خارج الصفحة
+        async function downloadCourseDocument(fileUrl, fileName) {
+            const directUrl = toDriveDirectDownloadUrl(fileUrl);
+            try {
+                const response = await fetch(directUrl);
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = fileName || 'مستند';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
+            } catch (error) {
+                // في حال منع المتصفح لقراءة الملف (CORS)، نعتمد على رابط التنزيل المباشر كحل بديل بدون فتح تبويب جديد
+                const a = document.createElement('a');
+                a.href = directUrl;
+                a.download = fileName || 'مستند';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            }
         }
 
         // الحد اليومي لعدد الحصص المسموح بإضافتها حسب خطة اشتراك المعلم
