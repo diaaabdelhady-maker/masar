@@ -280,35 +280,39 @@
         </div>
     </div>
 
-    <!-- Telegram Group Join Modal -->
-    <div id="telegram-group-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[155] hidden items-center justify-center p-4">
-        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 max-w-sm w-full relative shadow-2xl text-center transform transition-all">
-            <button onclick="closeModal('telegram-group-modal')" class="absolute top-4 left-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+    <!-- Telegram Group Join Modal: بيظهر تلقائي أول ما اليوزر يسجل دخول أو يعمل حساب -->
+    <div id="telegram-group-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[200] hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-7 max-w-sm w-full relative shadow-2xl text-center transform transition-all">
+            <button onclick="closeTelegramGroupModal()" class="absolute top-4 left-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
 
-            <div class="w-14 h-14 rounded-2xl bg-brand-primary/10 text-brand-primary flex items-center justify-center mx-auto mb-4 text-2xl logo-en font-black">
-                m
+            <!-- لوجو المنصة -->
+            <div class="flex flex-col items-center gap-1 mb-5">
+                
+                <span class="logo-en block text-2xl font-extrabold text-brand-dark dark:text-white tracking-tight">
+                    masar<span class="text-brand-primary">.</span>
+                </span>
+                <span class="block text-xs font-bold tracking-[0.3em] text-slate-500 dark:text-slate-400">مسار</span>
             </div>
 
-            <span class="logo-en block text-2xl font-extrabold text-brand-dark dark:text-white tracking-tight">
-                masar<span class="text-brand-primary">.</span>
-            </span>
+            <div class="w-14 h-14 rounded-full bg-sky-100 dark:bg-sky-900/30 text-sky-500 flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fa-brands fa-telegram"></i>
+            </div>
 
-            <hr class="my-3 border-slate-200 dark:border-slate-700">
+            <h3 class="text-lg font-extrabold text-brand-dark dark:text-white mb-2">انضم لجروب مسار على تليجرام</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-6">
+                عشان توصلك كل التحديثات والحصص والإعلانات المهمة أول بأول، انضم لجروب المنصة الرسمي.
+            </p>
 
-            <span class="block text-sm font-bold tracking-[0.25em] text-slate-500 dark:text-slate-400">مسار</span>
-            <p class="text-xs text-slate-400 dark:text-slate-500 mt-2 mb-5">جروب المنصة الرسمي على تليجرام (معلمين وطلاب)</p>
-
-            <a href="#" id="telegram-group-join-link" target="_blank" rel="noopener" onclick="markTelegramGroupJoined()"
-               class="flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-2xl transition mb-4">
+            <a href="#" id="telegram-group-join-link" target="_blank" rel="noopener" onclick="handleTelegramGroupJoinClick()"
+               class="flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-2xl transition mb-3">
                 <i class="fa-brands fa-telegram text-lg"></i> انضم الآن
             </a>
 
-            <label class="flex items-center justify-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400 cursor-pointer select-none">
-                <input type="checkbox" id="telegram-joined-checkbox" onchange="handleTelegramJoinedCheckbox(this)" class="w-4 h-4 rounded accent-brand-primary cursor-pointer">
-                تم الانضمام
-            </label>
+            <button onclick="closeTelegramGroupModal()" class="w-full text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition py-1">
+                لاحقاً
+            </button>
         </div>
     </div>
 
@@ -1587,7 +1591,7 @@
         const TELEGRAM_BOT_TOKEN = '8800012522:AAGNIm28oqlQBKFNqFuYVcKpEkpEaZhWEeM';
 
         // رابط Google Apps Script المسؤول عن رفع مستندات الدورات إلى Google Drive
-        const DOCUMENT_UPLOAD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwlwypDby34hal9eXAJJfvzGuxDcKGO3g0HUpYCCWIU2Yuq9YghfMogohs_voe3hhIt2g/exec';
+        const DOCUMENT_UPLOAD_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzJMGyRpImazIDvWrE6aKLT-arVX8H4UhvFBdqSgLQLGqhKYLqBUrXe0FBDJNWWUONv8g/exec';
 
         // ============================================================
         // إعدادات EmailJS - بيُستخدم لإرسال كلمة المرور على الجيميل عند "نسيت كلمة المرور"
@@ -1667,50 +1671,50 @@
             .catch(err => console.warn('تعذر إرسال إشعار تليجرام:', err));
         }
 
-        // هل المستخدم الحالي مستحق ينضم لجروب تليجرام الموحّد؟
-        // شرط: معلم متوافق عليه، أو أونر، أو اشترى واتوافق عليه في أي كورس (مش شرط الكورس اللي هو فاتحه دلوقتي بالذات)
-        function canJoinPlatformTelegramGroup() {
-            if (hasJoinedTelegramGroup()) return false;
-            if (!activeUser) return false;
-            if (activeUser.role === 'owner') return true;
-            if (activeUser.role === 'teacher' && activeUser.status === 'approved') return true;
-            return Object.values(userSubscriptions || {}).some(status => status === 'approved');
-        }
+        // ========== بوكس "انضم لجروب تليجرام" — بيظهر تلقائي أول ما اليوزر يسجل دخول أو يعمل حساب ==========
 
-        // بيرجع true لو المستخدم عمل تأكيد إنه انضم لجروب التليجرام (خلاص، زرار الانضمام يختفي من كل الكورسات)
-        function hasJoinedTelegramGroup() {
+        // بيرجع true لو اليوزر (بنفس الجهاز/المتصفح) دخل الجروب قبل كده أو قفل البوكس، عشان منزعجوش تاني
+        function hasSeenTelegramGroupPrompt() {
             try {
-                return localStorage.getItem('masar_telegram_group_joined') === 'true';
+                return localStorage.getItem('masar_telegram_group_prompt_seen') === 'true';
             } catch (e) {
                 return false;
             }
         }
 
+        function markTelegramGroupPromptSeen() {
+            try { localStorage.setItem('masar_telegram_group_prompt_seen', 'true'); } catch (e) {}
+        }
+
         function openTelegramGroupModal() {
             const link = document.getElementById('telegram-group-join-link');
-            const checkbox = document.getElementById('telegram-joined-checkbox');
             if (link) link.href = PLATFORM_TELEGRAM_INVITE_LINK;
-            if (checkbox) checkbox.checked = hasJoinedTelegramGroup();
 
             const modal = document.getElementById('telegram-group-modal');
             if (!modal) return;
             modal.classList.remove('hidden');
             modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
         }
 
-        function handleTelegramJoinedCheckbox(checkbox) {
-            if (checkbox && checkbox.checked) {
-                markTelegramGroupJoined();
-                setTimeout(() => closeModal('telegram-group-modal'), 400);
-            } else {
-                try { localStorage.removeItem('masar_telegram_group_joined'); } catch (e) {}
-            }
+        function closeTelegramGroupModal() {
+            const modal = document.getElementById('telegram-group-modal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.body.style.overflow = '';
+            markTelegramGroupPromptSeen();
         }
 
-        // يتخزن إن المستخدم انضم للجروب، وبيخلي زرار "انضم لجروب التليجرام" يختفي من كل الكورسات
-        function markTelegramGroupJoined() {
-            try { localStorage.setItem('masar_telegram_group_joined', 'true'); } catch (e) {}
-            if (currentActiveCourseId) openCourseDetails(currentActiveCourseId);
+        function handleTelegramGroupJoinClick() {
+            markTelegramGroupPromptSeen();
+            setTimeout(closeTelegramGroupModal, 300);
+        }
+
+        // بتتنادى فور نجاح تسجيل الدخول أو إنشاء الحساب (مش عند استرجاع جلسة قديمة محفوظة)
+        function showTelegramGroupPromptIfNeeded() {
+            if (hasSeenTelegramGroupPrompt()) return;
+            setTimeout(openTelegramGroupModal, 500);
         }
 
         let authFlow = 'login'; 
@@ -2207,6 +2211,7 @@
                     applyUserSession(ownerUser);
                     closeAuthModal();
                     navigateTo('owner-dash');
+                    showTelegramGroupPromptIfNeeded();
                 } finally {
                     hideLoadingOverlay();
                 }
@@ -2229,6 +2234,7 @@
                         localStorage.setItem('masar_user', JSON.stringify(teacherData));
                         applyUserSession(teacherData);
                         closeAuthModal();
+                        showTelegramGroupPromptIfNeeded();
                     } else {
                         const qStudent = window.fs.query(window.fs.collection(window.db, "students"), window.fs.where("email", "==", email));
                         const snapStudent = await window.fs.getDocs(qStudent);
@@ -2250,6 +2256,7 @@
                         localStorage.setItem('masar_user', JSON.stringify(studentData));
                         applyUserSession(studentData);
                         closeAuthModal();
+                        showTelegramGroupPromptIfNeeded();
                     } else {
                         const qTeacher = window.fs.query(window.fs.collection(window.db, "teachers"), window.fs.where("email", "==", email));
                         const snapTeacher = await window.fs.getDocs(qTeacher);
@@ -2303,7 +2310,7 @@
                     }
                     localStorage.setItem('masar_user', JSON.stringify(studentData));
                     applyUserSession(studentData);
-                    showAppAlert('أهلاً بك', 'تم إنشاء حساب الطالب بنجاح!', 'success');
+                    showAppAlert('أهلاً بك', 'تم إنشاء حساب الطالب بنجاح!', 'success', showTelegramGroupPromptIfNeeded);
                     closeAuthModal();
                 }
             }
@@ -2528,7 +2535,7 @@
             if (isReSubscribing) {
                 showAppAlert('تم إرسال طلب التجديد', 'يمكنك الاستمرار في العمل بشكل عادي. تلقى المنشئ إيصالك للمراجعة.', 'success');
             } else {
-                showAppAlert('تم الإرسال بنجاح', 'تم إرسال طلب الاشتراك كمعلم للمنشئ وبانتظار الموافقة.', 'success');
+                showAppAlert('تم الإرسال بنجاح', 'تم إرسال طلب الاشتراك كمعلم للمنشئ وبانتظار الموافقة.', 'success', showTelegramGroupPromptIfNeeded);
             }
             loadPlatformData();
             } finally {
@@ -4715,10 +4722,10 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
                         </div>
 
                         <div class="mt-auto pt-4">
-                            ${canJoinPlatformTelegramGroup() ? `
+                            ${(activeUser && !hasSeenTelegramGroupPrompt()) ? `
                             <button onclick="openTelegramGroupModal()"
                                     class="w-full flex items-center justify-center gap-2 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-2xl transition">
-                                <i class="fa-brands fa-telegram text-lg"></i> انضم لجروب مسار على تليجرام (معلمين وطلاب)
+                                <i class="fa-brands fa-telegram text-lg"></i> انضم لجروب مسار 
                             </button>` : ''}
                         </div>
                     </div>
