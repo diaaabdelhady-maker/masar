@@ -17,6 +17,9 @@
     <!-- EmailJS (يُستخدم لإرسال إيميل "نسيت كلمة المرور" مباشرة من المتصفح بدون سيرفر) -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
+    <!-- jsPDF (تُستخدم لتوليد شهادة إتمام الكورس كملف PDF) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -143,6 +146,35 @@
         @keyframes splashLoad {
             0% { transform: translateX(-120%); }
             100% { transform: translateX(260%); }
+        }
+
+        /* منع تحديد/نسخ نص السؤال والاختيارات أثناء الامتحان */
+        .no-select {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+        /* إخفاء أي محتوى بيتاخد له سكرين شوت/طباعة (لا يمنع السكرين شوت فعلياً لكنه رادع إضافي) */
+        body.exam-mode-active {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        @media print {
+            body.exam-mode-active #view-exam-taking { display: none !important; }
+        }
+        .exam-question-nav-btn {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            text-align: right;
+            font-weight: 800;
+            font-size: 0.8rem;
+            padding: 0.65rem 0.9rem;
+            border-radius: 0.9rem;
+            transition: all 0.2s ease;
         }
     </style>
     <script>
@@ -398,6 +430,8 @@
             </button>
             <div id="course-details-header" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-8 rounded-3xl shadow-sm mb-8"></div>
 
+            <div id="course-certificate-container" class="mb-8 hidden"></div>
+
             <div class="flex items-center gap-3 mb-6">
                 <button id="course-tab-btn-lessons" onclick="switchCourseDetailsTab('lessons')"
                         class="course-details-tab-btn flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black bg-brand-primary text-white shadow-md transition">
@@ -407,10 +441,78 @@
                         class="course-details-tab-btn flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 transition">
                     <i class="fa-solid fa-file-lines"></i> المستندات
                 </button>
+                <button id="course-tab-btn-exams" onclick="switchCourseDetailsTab('exams')"
+                        class="course-details-tab-btn flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-black bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 transition">
+                    <i class="fa-solid fa-file-pen"></i> الامتحانات
+                </button>
             </div>
 
             <div id="course-lessons-container" class="space-y-4"></div>
             <div id="course-documents-container" class="space-y-4 hidden"></div>
+            <div id="course-exams-container" class="space-y-4 hidden"></div>
+        </section>
+
+        <!-- 2.C EXAM TAKING VIEW - صفحة أداء الامتحان (سؤال في كل صفحة) -->
+        <section id="view-exam-taking" class="page-view py-4 md:py-8 max-w-6xl mx-auto px-4">
+
+            <!-- شريط علوي مبسط خاص بالامتحان فقط (بديل الهيدر الرئيسي المخفي) -->
+            <div class="flex items-center justify-between mb-4 gap-3">
+                <button onclick="toggleExamMobileNav()" class="md:hidden w-11 h-11 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-sm">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <span class="font-black text-sm text-slate-500 dark:text-slate-400 hidden md:block">أنت الآن داخل امتحان - لا يمكن مغادرة الصفحة إلا بالخروج الصريح</span>
+                <button onclick="confirmExitExamManually()" class="flex items-center gap-2 bg-rose-50 dark:bg-rose-500/10 text-rose-500 border border-rose-200 dark:border-rose-500/30 font-bold px-4 py-2.5 rounded-xl text-xs md:text-sm hover:bg-rose-500 hover:text-white transition">
+                    <i class="fa-solid fa-right-from-bracket"></i> <span class="hidden sm:inline">الخروج من الامتحان</span>
+                </button>
+            </div>
+
+            <div class="grid md:grid-cols-4 gap-6 items-start relative">
+                <!-- قائمة الأسئلة الجانبية: على الشمال في الديسكتوب، ومنسدلة من فوق في الموبايل -->
+                <div id="exam-questions-nav-panel" class="hidden md:block md:col-span-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 md:sticky md:top-6 order-1 md:order-2 absolute md:relative top-0 inset-x-0 z-30 shadow-xl md:shadow-none">
+                    <h4 class="font-black text-sm text-slate-700 dark:text-slate-200 mb-3">قائمة الأسئلة</h4>
+                    <div id="exam-questions-nav" class="flex flex-col gap-2 max-h-[420px] overflow-y-auto pl-1"></div>
+                </div>
+
+                <!-- محتوى السؤال -->
+                <div class="md:col-span-3 order-2 md:order-1">
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 md:p-10 shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
+                            <div id="exam-taking-timer" class="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-black px-4 py-2 rounded-xl text-sm w-fit">
+                                <span id="exam-timer-text">00:00</span> <i class="fa-solid fa-clock"></i>
+                            </div>
+                            <div class="sm:text-left">
+                                <span id="exam-taking-progress" class="inline-block bg-brand-primary text-white font-black px-4 py-2 rounded-xl text-sm"></span>
+                                <p class="text-xs text-slate-400 mt-1.5" id="exam-taking-subject"></p>
+                            </div>
+                        </div>
+
+                        <h3 class="text-lg font-black text-brand-dark dark:text-white mb-5">اختر الإجابة الصحيحة:</h3>
+
+                        <div class="bg-slate-50 dark:bg-slate-700/40 rounded-2xl p-6 md:p-8 mb-6 min-h-[140px] no-select" oncopy="return false" oncontextmenu="return false" onselectstart="return false">
+                            <p id="exam-question-text" class="text-lg md:text-xl font-bold text-slate-800 dark:text-white leading-relaxed"></p>
+                            <div id="exam-question-image-wrap" class="mt-4 hidden">
+                                <img id="exam-question-image" class="max-h-80 rounded-xl border border-slate-200 dark:border-slate-600 no-select" draggable="false" oncontextmenu="return false">
+                            </div>
+                        </div>
+
+                        <div id="exam-options-container" class="grid md:grid-cols-2 gap-3 mb-8 no-select" oncopy="return false" oncontextmenu="return false" onselectstart="return false"></div>
+
+                        <div class="flex items-center justify-between gap-3 flex-wrap">
+                            <button id="exam-next-btn" onclick="examGoNext()" class="order-1 md:order-1 bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-3 rounded-xl transition flex items-center gap-2">
+                                <span id="exam-next-btn-text">السؤال التالي</span> <i class="fa-solid fa-arrow-left"></i>
+                            </button>
+                            <button id="exam-prev-btn" onclick="examGoPrev()" class="order-2 md:order-2 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold px-6 py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition flex items-center gap-2">
+                                <i class="fa-solid fa-arrow-right"></i> السابق
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2.D EXAM RESULT VIEW -->
+        <section id="view-exam-result" class="page-view py-12 max-w-3xl mx-auto px-4">
+            <div id="exam-result-container"></div>
         </section>
 
         <!-- 3. TEACHERS VIEW -->
@@ -1446,6 +1548,17 @@
                         <span class="absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-all peer-checked:translate-x-5"></span>
                     </label>
                 </div>
+                <div class="flex items-center justify-between rounded-2xl border border-amber-200 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 px-4 py-3">
+                    <div>
+                        <span class="block text-xs font-black text-slate-700 dark:text-slate-200">هذه هي الحصة النهائية</span>
+                        <span class="block text-[10px] text-slate-500 dark:text-slate-400">أول ما الطالب يخلّصها (وكل اللي قبلها) هتظهر له شهادة الإتمام</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="lesson-final" class="sr-only peer">
+                        <span class="w-11 h-6 bg-slate-200 peer-checked:bg-amber-500 rounded-full transition-all"></span>
+                        <span class="absolute left-1 top-1 w-4 h-4 rounded-full bg-white transition-all peer-checked:translate-x-5"></span>
+                    </label>
+                </div>
                 <div>
                     <label class="block text-xs font-bold mb-1">رابط أو ID يوتيوب</label>
                     <input type="text" id="lesson-url" placeholder="https://www.youtube.com/watch?v=XXXXX" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm">
@@ -1490,6 +1603,104 @@
             </button>
 
             <div id="document-result-message" class="mt-4 text-xs text-center break-all"></div>
+        </div>
+    </div>
+
+    <!-- EXAM CREATE MODAL - الخطوة الأولى: اسم الامتحان ومدته -->
+    <div id="exam-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-8 max-w-md w-full relative shadow-2xl">
+            <button onclick="closeExamModal()" class="absolute top-5 left-5 text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="text-2xl font-bold text-brand-dark dark:text-white mb-1 text-center">إضافة امتحان جديد</h3>
+            <p class="text-xs text-center text-slate-500 dark:text-slate-400 mb-4">حدد اسم الامتحان والوقت المسموح به، بعدها ستقوم بإضافة الأسئلة</p>
+            <form class="space-y-4" onsubmit="handleStartExamCreation(event)">
+                <input type="hidden" id="exam-selected-course-id">
+                <div>
+                    <label class="block text-xs font-bold mb-1">اسم الامتحان</label>
+                    <input type="text" id="exam-title-input" required class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold mb-1">مدة الامتحان (بالدقائق)</label>
+                    <input type="number" id="exam-duration-input" min="1" required value="45" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm">
+                </div>
+                <button type="submit" class="w-full bg-brand-primary text-white py-3 rounded-xl font-bold">تأكيد ومتابعة لإضافة الأسئلة</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- EXAM QUESTION BUILDER MODAL - الخطوة الثانية: إضافة الأسئلة والاختيارات -->
+    <div id="exam-builder-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 max-w-2xl w-full relative shadow-2xl max-h-[92vh] overflow-y-auto">
+            <button onclick="closeExamBuilderModal()" class="absolute top-5 left-5 text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 id="exam-builder-title" class="text-xl font-bold text-brand-dark dark:text-white mb-1 text-center"></h3>
+            <p id="exam-builder-question-counter" class="text-xs text-center text-brand-primary font-black mb-5">السؤال 1</p>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold mb-1">نص السؤال</label>
+                    <textarea id="exam-question-input" rows="2" class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm resize-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold mb-1">صورة للسؤال (اختياري)</label>
+                    <input type="file" id="exam-question-image-input" accept="image/*" onchange="handleExamQuestionImageSelect(event)" class="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl">
+                    <div id="exam-question-image-preview-wrap" class="mt-2 hidden relative w-fit">
+                        <img id="exam-question-image-preview" class="max-h-40 rounded-xl border border-slate-200 dark:border-slate-600">
+                        <button type="button" onclick="removeExamQuestionImage()" class="absolute -top-2 -left-2 w-6 h-6 bg-rose-500 text-white rounded-full text-xs flex items-center justify-center shadow">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-xs font-bold">الاختيارات (حدد الإجابة الصحيحة)</label>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="removeExamOptionField()" class="w-7 h-7 rounded-lg bg-rose-100 text-rose-600 hover:bg-rose-200 font-bold text-sm">-</button>
+                            <button type="button" onclick="addExamOptionField()" class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-600 hover:bg-emerald-200 font-bold text-sm">+</button>
+                        </div>
+                    </div>
+                    <div id="exam-options-builder" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mt-6">
+                <button type="button" onclick="addAnotherExamQuestion()" class="w-full bg-brand-accent text-white py-3 rounded-xl font-bold hover:bg-cyan-700 transition">
+                    <i class="fa-solid fa-plus ml-1"></i> إضافة سؤال جديد
+                </button>
+                <button type="button" onclick="finishExamCreation()" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold hover:bg-emerald-600 transition">
+                    <i class="fa-solid fa-circle-check ml-1"></i> تأكيد وحفظ الامتحان
+                </button>
+            </div>
+            <p class="text-[11px] text-slate-400 text-center mt-3">تم إضافة <span id="exam-builder-saved-count">0</span> سؤال حتى الآن</p>
+        </div>
+    </div>
+
+    <!-- EXAM SUBMISSIONS MODAL - للمعلم: عرض تسليمات الطلاب لامتحان معين -->
+    <div id="exam-submissions-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl p-6 md:p-8 max-w-2xl w-full relative shadow-2xl max-h-[85vh] overflow-y-auto">
+            <button onclick="closeExamSubmissionsModal()" class="absolute top-5 left-5 text-slate-400 hover:text-slate-700 dark:hover:text-white">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <h3 class="text-xl font-bold text-brand-dark dark:text-white mb-1 text-center">تسليمات الامتحان</h3>
+            <p id="exam-submissions-exam-title" class="text-xs text-center text-slate-500 dark:text-slate-400 mb-5"></p>
+            <div class="overflow-x-auto">
+                <table class="w-full text-right text-sm">
+                    <thead class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200">
+                        <tr>
+                            <th class="p-3">اسم الطالب</th>
+                            <th class="p-3">الدرجة</th>
+                            <th class="p-3">النتيجة</th>
+                            <th class="p-3">تاريخ التسليم</th>
+                        </tr>
+                    </thead>
+                    <tbody id="exam-submissions-table"></tbody>
+                </table>
+            </div>
+            <p id="exam-submissions-empty" class="hidden text-center text-xs text-slate-400 py-10">لا يوجد طلاب قاموا بتسليم هذا الامتحان حتى الآن.</p>
         </div>
     </div>
 
@@ -1723,7 +1934,13 @@
         let globalCoursesData = {};
         let globalTeachersData = {};
         let userSubscriptions = {}; 
-        let userCompletedLessons = {}; 
+        let userCompletedLessons = {};
+        let userExamSubmissions = {}; // { examId: submissionData } للطالب الحالي
+        let userExamAttempts = {}; // { examId: attemptData } يسجل إن الطالب دخل الامتحان ولو مسلمش يتقفل تاني
+        let examBuilderState = null;  // حالة معالج إنشاء الامتحان للمعلم
+        let examBuilderCurrentImage = null; // صورة السؤال الحالي أثناء الإنشاء (base64) إن وجدت
+        let currentExamSession = null; // حالة أداء الامتحان للطالب
+        let examMobileNavOpen = false; // هل قائمة الأسئلة مفتوحة على الموبايل
         let selectedCourseForPay = null;
         let currentActiveCourseId = null;
         let activeUser = null;
@@ -1999,6 +2216,8 @@
             syncMobileTeacherNavButton();
             subscribeToStudentSubscriptions(user.email);
             fetchStudentProgressCloud(user.email);
+            fetchStudentExamSubmissionsCloud(user.email);
+            fetchStudentExamAttemptsCloud(user.email);
         }
 
         function logout() {
@@ -2015,7 +2234,31 @@
                 const target = btn.dataset.target;
                 btn.classList.toggle('active', target === targetId);
             });
+
+            // أثناء أداء الامتحان بنخفي الهيدر والقائمة السفلية بالكامل عشان الطالب ميقدرش يتنقل برا صفحة الامتحان
+            const header = document.querySelector('header');
+            const mobileBottomNav = document.getElementById('mobile-bottom-nav');
+            const isExamTaking = targetId === 'exam-taking';
+            if (header) header.classList.toggle('hidden', isExamTaking);
+            if (mobileBottomNav) mobileBottomNav.classList.toggle('hidden', isExamTaking);
+            document.body.classList.toggle('exam-mode-active', isExamTaking);
+            if (!isExamTaking) closeExamMobileNav();
+
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // إظهار/إخفاء قائمة الأسئلة المنسدلة على الموبايل أثناء الامتحان (بديل الشريط الجانبي)
+        function toggleExamMobileNav() {
+            const panel = document.getElementById('exam-questions-nav-panel');
+            if (!panel) return;
+            examMobileNavOpen = !examMobileNavOpen;
+            panel.classList.toggle('hidden', !examMobileNavOpen);
+        }
+
+        function closeExamMobileNav() {
+            examMobileNavOpen = false;
+            const panel = document.getElementById('exam-questions-nav-panel');
+            if (panel) panel.classList.add('hidden');
         }
 
         function syncMobileTeacherNavButton() {
@@ -3847,6 +4090,51 @@ window.closeFullscreenPlayer = function() {
             if (currentActiveCourseId) openCourseDetails(currentActiveCourseId);
         }
 
+        async function fetchStudentExamSubmissionsCloud(userEmail) {
+            if (!window.db || !userEmail) return;
+            const q = window.fs.query(window.fs.collection(window.db, "exam_submissions"), window.fs.where("studentEmail", "==", userEmail));
+            const snap = await window.fs.getDocs(q);
+            userExamSubmissions = {};
+            snap.forEach(d => {
+                const data = d.data();
+                data.docId = d.id;
+                userExamSubmissions[data.examId] = data;
+            });
+            if (currentActiveCourseId) openCourseDetails(currentActiveCourseId);
+        }
+
+        // يجيب كل محاولات الدخول للامتحانات الخاصة بالطالب، عشان لو دخل امتحان قبل كدا ومسلمش يفضل متقفل عليه
+        async function fetchStudentExamAttemptsCloud(userEmail) {
+            if (!window.db || !userEmail) return;
+            const q = window.fs.query(window.fs.collection(window.db, "exam_attempts"), window.fs.where("studentEmail", "==", userEmail));
+            const snap = await window.fs.getDocs(q);
+            userExamAttempts = {};
+            snap.forEach(d => {
+                const data = d.data();
+                data.docId = d.id;
+                userExamAttempts[data.examId] = data;
+            });
+            if (currentActiveCourseId) openCourseDetails(currentActiveCourseId);
+        }
+
+        // يسجل إن الطالب بدأ الامتحان ده فعلاً - بيتحفظ فور الدخول عشان حتى لو خرج من غير تسليم يتقفل عليه
+        async function recordExamAttemptStarted(courseId, examId) {
+            if (!window.db || !activeUser || !activeUser.email) return;
+            try {
+                const attempt = {
+                    studentEmail: activeUser.email,
+                    studentName: activeUser.name || activeUser.email,
+                    courseId,
+                    examId,
+                    startedAt: new Date().toISOString()
+                };
+                await window.fs.addDoc(window.fs.collection(window.db, "exam_attempts"), attempt);
+                userExamAttempts[examId] = attempt;
+            } catch (e) {
+                console.error('exam attempt record error', e);
+            }
+        }
+
         async function markLessonCompletedCloud(courseId, lessonIndex) {
             if (!activeUser || !window.db) return;
             const key = `${courseId}_${lessonIndex}`;
@@ -4092,6 +4380,25 @@ window.closeFullscreenPlayer = function() {
                         `;
                     });
 
+                    const exams = c.exams || [];
+                    let examsListHtml = '';
+                    exams.forEach((ex, index) => {
+                        const safeTitle = (ex.title || 'امتحان').replace(/'/g, "\\'");
+                        examsListHtml += `
+                            <div class="flex items-center justify-between bg-slate-50 dark:bg-slate-700/50 p-2 rounded-xl text-xs gap-2">
+                                <span class="font-bold truncate max-w-[130px]"><i class="fa-solid fa-file-pen text-brand-primary ml-1"></i> ${ex.title}</span>
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <button onclick="openExamSubmissionsModal('${cId}', '${ex.id}', '${safeTitle}')" title="تسليمات الامتحان" class="text-brand-primary hover:text-indigo-700 font-bold">
+                                        <i class="fa-solid fa-list-check"></i>
+                                    </button>
+                                    <button onclick="deleteExam('${cId}', ${index})" class="text-rose-500 hover:text-rose-700 font-bold">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+
                     teacherCoursesGrid.innerHTML += `
                         <div class="interactive-card bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
                             <div>
@@ -4103,6 +4410,10 @@ window.closeFullscreenPlayer = function() {
                                     </button>
                                 </div>
                                 <p class="text-xs font-bold text-emerald-600 mb-2">السعر: ${c.price || 0} ج.م | فودافون: ${c.vodafoneNumber || 'غير محدد'}</p>
+                                <p class="inline-flex items-center gap-1.5 bg-indigo-50 dark:bg-indigo-500/10 text-brand-primary text-xs font-bold px-2.5 py-1 rounded-lg mb-2">
+                                    <i class="fa-solid fa-users"></i>
+                                    <span id="course-subs-count-${cId}">...</span> مشترك
+                                </p>
                                 <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">${c.desc}</p>
                                 <p class="text-[11px] font-black text-slate-500 dark:text-slate-400 mb-1.5">الحصص</p>
                                 <div class="space-y-2 mb-4">
@@ -4112,13 +4423,20 @@ window.closeFullscreenPlayer = function() {
                                 <div class="space-y-2 mb-4">
                                     ${documentsListHtml || '<p class="text-xs text-slate-400">لا توجد مستندات مرفوعة بعد.</p>'}
                                 </div>
+                                <p class="text-[11px] font-black text-slate-500 dark:text-slate-400 mb-1.5">الامتحانات</p>
+                                <div class="space-y-2 mb-4">
+                                    ${examsListHtml || '<p class="text-xs text-slate-400">لا توجد امتحانات مضافة بعد.</p>'}
+                                </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-2">
+                            <div class="grid grid-cols-3 gap-2">
                                 <button onclick="openLessonModal('${cId}')" class="w-full bg-brand-primary text-white text-xs font-bold py-2.5 rounded-xl hover:bg-indigo-700 transition">
                                     <i class="fa-solid fa-plus ml-1"></i> إضافة حصة
                                 </button>
                                 <button onclick="openDocumentUploadModal('${cId}')" class="w-full bg-brand-accent text-white text-xs font-bold py-2.5 rounded-xl hover:bg-cyan-700 transition">
                                     <i class="fa-solid fa-file-arrow-up ml-1"></i> رفع مستند
+                                </button>
+                                <button onclick="openExamModal('${cId}')" class="w-full bg-amber-500 text-white text-xs font-bold py-2.5 rounded-xl hover:bg-amber-600 transition">
+                                    <i class="fa-solid fa-file-pen ml-1"></i> إضافة امتحان
                                 </button>
                             </div>
                         </div>
@@ -4132,6 +4450,37 @@ window.closeFullscreenPlayer = function() {
 
             if (activeUser && activeUser.role === 'teacher') {
                 loadTeacherSubscriptions(activeUser.email);
+                loadTeacherCourseSubscriberCounts(activeUser.email);
+            }
+        }
+
+        // يجيب عدد الطلبة المشتركين (المقبولين فعلياً) في كل دورة للمعلم الحالي ويعرضه على كارت الدورة
+        async function loadTeacherCourseSubscriberCounts(teacherEmail) {
+            if (!window.db || !window.fs) return;
+            try {
+                const q = window.fs.query(
+                    window.fs.collection(window.db, "subscriptions"),
+                    window.fs.where("teacherEmail", "==", teacherEmail),
+                    window.fs.where("status", "==", "approved")
+                );
+                const snap = await window.fs.getDocs(q);
+
+                const countsByCourse = {};
+                snap.forEach(dSnap => {
+                    const sub = dSnap.data();
+                    if (!sub.courseId) return;
+                    countsByCourse[sub.courseId] = (countsByCourse[sub.courseId] || 0) + 1;
+                });
+
+                document.querySelectorAll('[id^="course-subs-count-"]').forEach(el => {
+                    const cId = el.id.replace('course-subs-count-', '');
+                    el.textContent = countsByCourse[cId] || 0;
+                });
+            } catch (error) {
+                console.warn('تعذر تحميل عدد المشتركين:', error);
+                document.querySelectorAll('[id^="course-subs-count-"]').forEach(el => {
+                    if (el.textContent === '...') el.textContent = '0';
+                });
             }
         }
 
@@ -4596,6 +4945,7 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
             );
             showAppAlert('تم القبول', 'تم قبول الطالب بنجاح وفتح الكورس له!', 'success');
             loadTeacherSubscriptions(activeUser.email);
+            loadTeacherCourseSubscriberCounts(activeUser.email);
         }
 
         function rejectSubscription(subId) {
@@ -4785,6 +5135,9 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
                     const lessonFreeBadge = lessonIsFree
                         ? '<span class="inline-flex items-center gap-1 rounded-full bg-emerald-500 text-white px-2.5 py-1 text-[10px] font-black">حصّة مجانية</span>'
                         : '';
+                    const lessonFinalBadge = lesson.isFinal
+                        ? '<span class="inline-flex items-center gap-1 rounded-full bg-amber-500 text-white px-2.5 py-1 text-[10px] font-black"><i class="fa-solid fa-award"></i> الحصة النهائية</span>'
+                        : '';
 
                     lessonsContainer.innerHTML += `
                         <button onclick="${canWatch ? `playLessonFullScreen('${courseId}', ${index})` : `showAppAlert('الكورس مغلق', 'عذراً! يلزم شراء الكورس وموافقة المدرس لتتمكن من مشاهدة الفيديوهات.', 'error')`}" 
@@ -4800,6 +5153,7 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
                                         </h4>
                                         ${lessonTypeBadge}
                                         ${lessonFreeBadge}
+                                        ${lessonFinalBadge}
                                     </div>
                                     <p class="text-xs text-slate-400 mt-1">${lessonIsFree ? 'هذه الحصة مجانية ومفتوحة للجميع' : (canWatch ? (completed ? 'تم استكمال هذه الحصة' : `انقر للتشغيل - ${lessonType === 'live' ? 'بث مباشر' : 'فيديو'}`) : 'الحصة مغلقة - اشترك لفتح المحتوى')}</p>
                                 </div>
@@ -4808,6 +5162,39 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
                         </button>
                     `;
                 });
+            }
+
+            // زرار شهادة إتمام الكورس: يظهر للطالب المشترك لما يخلّص "الحصة النهائية" اللي حددها المعلم (وكل اللي قبلها)
+            const certContainer = document.getElementById('course-certificate-container');
+            if (certContainer) {
+                const finalLessonIndex = lessons.findIndex(l => l.isFinal);
+                const courseHasFinalLesson = finalLessonIndex !== -1;
+                const allUpToFinalCompleted = courseHasFinalLesson &&
+                    Array.from({ length: finalLessonIndex + 1 }, (_, i) => i).every(i => userCompletedLessons[`${courseId}_${i}`]);
+
+                if (isSubscribed && !isTeacherOwner && courseHasFinalLesson && allUpToFinalCompleted) {
+                    certContainer.classList.remove('hidden');
+                    certContainer.innerHTML = `
+                        <div class="rounded-2xl border-2 border-dashed border-amber-400 bg-amber-50 dark:bg-amber-500/10 p-6 flex flex-col md:flex-row items-center justify-between gap-4 text-center md:text-right">
+                            <div class="flex items-center gap-4">
+                                <div class="w-14 h-14 rounded-2xl bg-amber-400 text-white flex items-center justify-center text-2xl shrink-0">
+                                    <i class="fa-solid fa-award"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-black text-slate-800 dark:text-white">مبروك! أتممت كورس "${course.title}" بالكامل 🎉</h4>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">اضغط الزرار لتحميل شهادة إتمام الكورس بصيغة PDF</p>
+                                </div>
+                            </div>
+                            <button onclick="generateCourseCertificate('${courseId}')"
+                                    class="shrink-0 flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-2xl transition">
+                                <i class="fa-solid fa-download"></i> تحميل الشهادة
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    certContainer.classList.add('hidden');
+                    certContainer.innerHTML = '';
+                }
             }
 
             const documents = course.documents || [];
@@ -4847,36 +5234,108 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
                 });
             }
 
+            renderCourseExamsList(course, courseId, isTeacherOwner, isSubscribed);
+
             switchCourseDetailsTab('lessons');
             navigateTo('course-details');
         }
 
-        // تبديل تبويب "الحصص" / "المستندات" داخل صفحة تفاصيل الدورة
+        // عرض قائمة امتحانات الدورة للطالب (تبويب "الامتحانات")
+        function renderCourseExamsList(course, courseId, isTeacherOwner, isSubscribed) {
+            const examsContainer = document.getElementById('course-exams-container');
+            if (!examsContainer) return;
+            const exams = course.exams || [];
+            examsContainer.innerHTML = '';
+
+            if (exams.length === 0) {
+                examsContainer.innerHTML = `
+                    <div class="text-center py-12 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <i class="fa-solid fa-file-circle-question text-4xl text-slate-400 mb-3"></i>
+                        <p class="text-sm text-slate-400 font-bold">لم يتم إضافة أي امتحانات لهذه الدورة حتى الآن.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            exams.forEach((exam) => {
+                const canTake = isTeacherOwner || isSubscribed;
+                const submission = userExamSubmissions[exam.id];
+                const qCount = (exam.questions || []).length;
+
+                let actionHtml = '';
+                if (!canTake) {
+                    actionHtml = `<span class="text-xs font-bold text-slate-400 flex items-center gap-1"><i class="fa-solid fa-lock"></i> اشترك في الدورة لفتح الامتحان</span>`;
+                } else if (isTeacherOwner) {
+                    actionHtml = `<span class="text-xs font-bold text-slate-400 flex items-center gap-1"><i class="fa-solid fa-chalkboard-user"></i> أنت معلم هذا الكورس</span>`;
+                } else if (submission) {
+                    const passedBadge = submission.passed
+                        ? `<span class="text-emerald-600 dark:text-emerald-400"><i class="fa-solid fa-circle-check"></i> ناجح</span>`
+                        : `<span class="text-rose-500"><i class="fa-solid fa-circle-xmark"></i> راسب</span>`;
+                    actionHtml = `
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-black text-slate-600 dark:text-slate-300">${passedBadge} - درجتك: ${submission.score}%</span>
+                            <button onclick="viewExamResult('${courseId}', '${exam.id}')" class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold px-4 py-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition">
+                                <i class="fa-solid fa-eye ml-1"></i> عرض النتيجة
+                            </button>
+                        </div>
+                    `;
+                } else if (userExamAttempts[exam.id]) {
+                    actionHtml = `<span class="text-xs font-bold text-rose-500 flex items-center gap-1"><i class="fa-solid fa-ban"></i> لقد خرجت من هذا الامتحان قبل التسليم ولا يمكن الدخول مرة أخرى</span>`;
+                } else {
+                    actionHtml = `
+                        <button onclick="confirmStartExam('${courseId}', '${exam.id}')" class="bg-brand-primary text-white text-xs font-bold px-5 py-2.5 rounded-xl hover:bg-indigo-700 transition">
+                            <i class="fa-solid fa-play ml-1"></i> بدء الامتحان
+                        </button>
+                    `;
+                }
+
+                examsContainer.innerHTML += `
+                    <div class="interactive-card w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 rounded-2xl flex flex-wrap items-center justify-between gap-4">
+                        <div class="flex items-center gap-4 min-w-0">
+                            <div class="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-slate-700 text-brand-primary flex items-center justify-center text-xl shrink-0">
+                                <i class="fa-solid fa-file-pen"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-extrabold text-sm md:text-base text-slate-800 dark:text-white">${exam.title}</h4>
+                                <p class="text-xs text-slate-400 mt-1">${qCount} سؤال - ${exam.duration} دقيقة</p>
+                            </div>
+                        </div>
+                        <div>${actionHtml}</div>
+                    </div>
+                `;
+            });
+        }
+
+        // تبديل تبويب "الحصص" / "المستندات" / "الامتحانات" داخل صفحة تفاصيل الدورة
         function switchCourseDetailsTab(tab) {
             const lessonsBtn = document.getElementById('course-tab-btn-lessons');
             const documentsBtn = document.getElementById('course-tab-btn-documents');
+            const examsBtn = document.getElementById('course-tab-btn-exams');
             const lessonsContainer = document.getElementById('course-lessons-container');
             const documentsContainer = document.getElementById('course-documents-container');
-            if (!lessonsBtn || !documentsBtn || !lessonsContainer || !documentsContainer) return;
+            const examsContainer = document.getElementById('course-exams-container');
+            if (!lessonsBtn || !documentsBtn || !examsBtn || !lessonsContainer || !documentsContainer || !examsContainer) return;
 
             const activeClasses = ['bg-brand-primary', 'text-white', 'shadow-md'];
             const inactiveClasses = ['bg-slate-100', 'dark:bg-slate-700', 'text-slate-600', 'dark:text-slate-300'];
 
-            if (tab === 'documents') {
-                lessonsContainer.classList.add('hidden');
-                documentsContainer.classList.remove('hidden');
-                documentsBtn.classList.add(...activeClasses);
-                documentsBtn.classList.remove(...inactiveClasses);
-                lessonsBtn.classList.add(...inactiveClasses);
-                lessonsBtn.classList.remove(...activeClasses);
-            } else {
-                documentsContainer.classList.add('hidden');
-                lessonsContainer.classList.remove('hidden');
-                lessonsBtn.classList.add(...activeClasses);
-                lessonsBtn.classList.remove(...inactiveClasses);
-                documentsBtn.classList.add(...inactiveClasses);
-                documentsBtn.classList.remove(...activeClasses);
-            }
+            const tabs = [
+                { key: 'lessons', btn: lessonsBtn, container: lessonsContainer },
+                { key: 'documents', btn: documentsBtn, container: documentsContainer },
+                { key: 'exams', btn: examsBtn, container: examsContainer }
+            ];
+
+            tabs.forEach(t => {
+                if (t.key === tab) {
+                    t.container.classList.remove('hidden');
+                    t.btn.classList.add(...activeClasses);
+                    t.btn.classList.remove(...inactiveClasses);
+                } else {
+                    t.container.classList.add('hidden');
+                    t.btn.classList.add(...inactiveClasses);
+                    t.btn.classList.remove(...activeClasses);
+                }
+            });
         }
 
         async function playLessonFullScreen(courseId, lessonIndex) {
@@ -5032,6 +5491,8 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
             document.getElementById('lesson-type').value = 'video';
             const freeToggle = document.getElementById('lesson-free');
             if (freeToggle) freeToggle.checked = false;
+            const finalToggle = document.getElementById('lesson-final');
+            if (finalToggle) finalToggle.checked = false;
 
             const hintEl = document.getElementById('lesson-limit-hint');
             if (hintEl) {
@@ -5291,6 +5752,7 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
             const url = document.getElementById('lesson-url').value.trim();
             const lessonType = document.getElementById('lesson-type').value || 'video';
             const isFreeLesson = document.getElementById('lesson-free')?.checked || false;
+            const isFinalLesson = document.getElementById('lesson-final')?.checked || false;
 
             if (!activeUser || activeUser.role !== 'teacher') {
                 showAppAlert('غير مصرح', 'يجب تسجيل الدخول كمعلم لإضافة حصة.', 'error');
@@ -5325,7 +5787,12 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
                     return;
                 }
 
-                lessons.push({ title, url, type: lessonType, isFree: isFreeLesson, free: isFreeLesson, createdAt: new Date().toISOString() });
+                // في الكورس حصة نهائية واحدة بس - لو المعلم علّم حصة جديدة كنهائية، نشيل العلامة من أي حصة سابقة
+                if (isFinalLesson) {
+                    lessons = lessons.map(l => ({ ...l, isFinal: false }));
+                }
+
+                lessons.push({ title, url, type: lessonType, isFree: isFreeLesson, free: isFreeLesson, isFinal: isFinalLesson, createdAt: new Date().toISOString() });
                 await window.fs.updateDoc(courseRef, { lessons });
 
                 const courseForNotify = freshCoursesData[courseId];
@@ -5342,6 +5809,639 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
             } finally {
                 hideLoadingOverlay();
             }
+        }
+
+        // ============================================================
+        // نظام الامتحانات - جهة المعلم (إنشاء/حذف/عرض التسليمات)
+        // ============================================================
+        function openExamModal(courseId) {
+            document.getElementById('exam-selected-course-id').value = courseId;
+            document.getElementById('exam-title-input').value = '';
+            document.getElementById('exam-duration-input').value = 45;
+            document.getElementById('exam-modal').classList.remove('hidden');
+            document.getElementById('exam-modal').classList.add('flex');
+        }
+
+        function closeExamModal() { closeModal('exam-modal'); }
+
+        function handleStartExamCreation(e) {
+            e.preventDefault();
+            const courseId = document.getElementById('exam-selected-course-id').value;
+            const title = document.getElementById('exam-title-input').value.trim();
+            const duration = Number(document.getElementById('exam-duration-input').value) || 45;
+            if (!title || !courseId) return;
+
+            examBuilderState = {
+                courseId,
+                title,
+                duration,
+                questions: [],
+                currentOptions: ['', '', '', ''],
+                currentCorrectIndex: null
+            };
+
+            closeExamModal();
+            document.getElementById('exam-builder-title').innerText = title;
+            renderExamBuilderQuestion();
+            document.getElementById('exam-builder-modal').classList.remove('hidden');
+            document.getElementById('exam-builder-modal').classList.add('flex');
+        }
+
+        function closeExamBuilderModal() {
+            showAppAlert(
+                'إلغاء إنشاء الامتحان',
+                'هل أنت متأكد؟ لو خرجت دلوقتي هيتم فقدان كل الأسئلة اللي لسه ماتحفظتش.',
+                'confirm',
+                () => {
+                    examBuilderState = null;
+                    examBuilderCurrentImage = null;
+                    closeModal('exam-builder-modal');
+                },
+                true
+            );
+        }
+
+        function renderExamBuilderQuestion() {
+            if (!examBuilderState) return;
+            document.getElementById('exam-question-input').value = '';
+            examBuilderState.currentOptions = ['', '', '', ''];
+            examBuilderState.currentCorrectIndex = null;
+            document.getElementById('exam-builder-question-counter').innerText = `السؤال ${examBuilderState.questions.length + 1}`;
+            document.getElementById('exam-builder-saved-count').innerText = examBuilderState.questions.length;
+            removeExamQuestionImage();
+            renderExamOptionsBuilder();
+        }
+
+        // قراءة صورة السؤال المرفوعة وتحويلها base64 عشان تتحفظ مع بيانات السؤال
+        function handleExamQuestionImageSelect(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function () {
+                examBuilderCurrentImage = reader.result;
+                const preview = document.getElementById('exam-question-image-preview');
+                preview.src = examBuilderCurrentImage;
+                document.getElementById('exam-question-image-preview-wrap').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeExamQuestionImage() {
+            examBuilderCurrentImage = null;
+            const input = document.getElementById('exam-question-image-input');
+            if (input) input.value = '';
+            const wrap = document.getElementById('exam-question-image-preview-wrap');
+            if (wrap) wrap.classList.add('hidden');
+        }
+
+        function renderExamOptionsBuilder() {
+            const container = document.getElementById('exam-options-builder');
+            if (!container || !examBuilderState) return;
+            container.innerHTML = '';
+            examBuilderState.currentOptions.forEach((val, idx) => {
+                const isCorrect = examBuilderState.currentCorrectIndex === idx;
+                container.innerHTML += `
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="selectExamCorrectOption(${idx})" title="اختر كإجابة صحيحة"
+                                class="w-7 h-7 rounded-full border-2 flex items-center justify-center shrink-0 transition ${isCorrect ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 dark:border-slate-500'}">
+                            ${isCorrect ? '<i class="fa-solid fa-check text-[10px]"></i>' : ''}
+                        </button>
+                        <input type="text" value="${(val || '').replace(/"/g, '&quot;')}" oninput="updateExamOptionValue(${idx}, this.value)"
+                               placeholder="اكتب الاختيار ${idx + 1}"
+                               class="flex-1 px-3 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm">
+                    </div>
+                `;
+            });
+        }
+
+        function updateExamOptionValue(idx, value) {
+            if (!examBuilderState) return;
+            examBuilderState.currentOptions[idx] = value;
+        }
+
+        function selectExamCorrectOption(idx) {
+            if (!examBuilderState) return;
+            examBuilderState.currentCorrectIndex = idx;
+            renderExamOptionsBuilder();
+        }
+
+        function addExamOptionField() {
+            if (!examBuilderState) return;
+            if (examBuilderState.currentOptions.length >= 6) {
+                showAppAlert('الحد الأقصى', 'أقصى عدد اختيارات للسؤال هو 6.', 'error');
+                return;
+            }
+            examBuilderState.currentOptions.push('');
+            renderExamOptionsBuilder();
+        }
+
+        function removeExamOptionField() {
+            if (!examBuilderState) return;
+            if (examBuilderState.currentOptions.length <= 2) {
+                showAppAlert('الحد الأدنى', 'لازم يكون فيه اختيارين على الأقل.', 'error');
+                return;
+            }
+            examBuilderState.currentOptions.pop();
+            if (examBuilderState.currentCorrectIndex !== null && examBuilderState.currentCorrectIndex >= examBuilderState.currentOptions.length) {
+                examBuilderState.currentCorrectIndex = null;
+            }
+            renderExamOptionsBuilder();
+        }
+
+        // يتحقق من صحة السؤال الحالي (نص + كل الاختيارات + إجابة صحيحة محددة) ويضيفه لمصفوفة الأسئلة
+        function captureCurrentExamQuestion() {
+            const text = document.getElementById('exam-question-input').value.trim();
+            if (!text) {
+                showAppAlert('بيانات ناقصة', 'من فضلك اكتب نص السؤال.', 'error');
+                return false;
+            }
+            const options = examBuilderState.currentOptions.map(o => (o || '').trim());
+            if (options.some(o => !o)) {
+                showAppAlert('بيانات ناقصة', 'من فضلك املأ كل الاختيارات.', 'error');
+                return false;
+            }
+            if (examBuilderState.currentCorrectIndex === null || examBuilderState.currentCorrectIndex === undefined) {
+                showAppAlert('لم يتم تحديد الإجابة الصحيحة', 'من فضلك اختر الإجابة الصحيحة قبل المتابعة لسؤال جديد.', 'error');
+                return false;
+            }
+            const questionData = {
+                text,
+                options,
+                correctIndex: examBuilderState.currentCorrectIndex
+            };
+            if (examBuilderCurrentImage) questionData.image = examBuilderCurrentImage;
+            examBuilderState.questions.push(questionData);
+            return true;
+        }
+
+        function addAnotherExamQuestion() {
+            if (!examBuilderState) return;
+            if (!captureCurrentExamQuestion()) return;
+            renderExamBuilderQuestion();
+        }
+
+        async function finishExamCreation() {
+            if (!examBuilderState) return;
+            if (!captureCurrentExamQuestion()) return;
+
+            if (examBuilderState.questions.length === 0) {
+                showAppAlert('لا يوجد أسئلة', 'أضف سؤال واحد على الأقل قبل حفظ الامتحان.', 'error');
+                return;
+            }
+
+            showLoadingOverlay('جاري حفظ الامتحان...');
+            try {
+                const courseId = examBuilderState.courseId;
+                const courseRef = window.fs.doc(window.db, "courses", courseId);
+                const coursesSnap = await window.fs.getDocs(window.fs.collection(window.db, "courses"));
+
+                let exams = [];
+                coursesSnap.forEach(docSnap => {
+                    if (docSnap.id === courseId) exams = docSnap.data().exams || [];
+                });
+
+                exams.push({
+                    id: `exam_${Date.now()}`,
+                    title: examBuilderState.title,
+                    duration: examBuilderState.duration,
+                    questions: examBuilderState.questions,
+                    createdAt: new Date().toISOString()
+                });
+
+                await window.fs.updateDoc(courseRef, { exams });
+
+                examBuilderState = null;
+                examBuilderCurrentImage = null;
+                closeModal('exam-builder-modal');
+                hideLoadingOverlay();
+                showAppAlert('تم بنجاح', 'تم إنشاء الامتحان بنجاح!', 'success');
+                loadPlatformData();
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        function deleteExam(courseId, examIndex) {
+            showAppAlert(
+                'حذف الامتحان',
+                'هل أنت متأكد من حذف هذا الامتحان بالكامل؟',
+                'confirm',
+                async () => {
+                    const courseRef = window.fs.doc(window.db, "courses", courseId);
+                    const coursesSnap = await window.fs.getDocs(window.fs.collection(window.db, "courses"));
+                    let exams = [];
+                    coursesSnap.forEach(docSnap => {
+                        if (docSnap.id === courseId) exams = docSnap.data().exams || [];
+                    });
+                    exams.splice(examIndex, 1);
+                    await window.fs.updateDoc(courseRef, { exams });
+                    loadPlatformData();
+                },
+                true
+            );
+        }
+
+        async function openExamSubmissionsModal(courseId, examId, examTitle) {
+            document.getElementById('exam-submissions-exam-title').innerText = examTitle;
+            const table = document.getElementById('exam-submissions-table');
+            const emptyMsg = document.getElementById('exam-submissions-empty');
+            table.innerHTML = '';
+            emptyMsg.classList.add('hidden');
+
+            document.getElementById('exam-submissions-modal').classList.remove('hidden');
+            document.getElementById('exam-submissions-modal').classList.add('flex');
+
+            const q = window.fs.query(window.fs.collection(window.db, "exam_submissions"), window.fs.where("examId", "==", examId));
+            const snap = await window.fs.getDocs(q);
+
+            if (snap.empty) {
+                emptyMsg.classList.remove('hidden');
+                return;
+            }
+
+            snap.forEach(docSnap => {
+                const s = docSnap.data();
+                const dateLabel = s.submittedAt ? new Date(s.submittedAt).toLocaleString('ar-EG') : '-';
+                const resultBadge = s.passed
+                    ? `<span class="text-emerald-600 font-bold"><i class="fa-solid fa-circle-check"></i> ناجح</span>`
+                    : `<span class="text-rose-500 font-bold"><i class="fa-solid fa-circle-xmark"></i> راسب</span>`;
+                table.innerHTML += `
+                    <tr class="border-b border-slate-100 dark:border-slate-700">
+                        <td class="p-3 font-bold">${s.studentName || s.studentEmail}</td>
+                        <td class="p-3">${s.score}%</td>
+                        <td class="p-3">${resultBadge}</td>
+                        <td class="p-3 text-xs text-slate-400">${dateLabel}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function closeExamSubmissionsModal() { closeModal('exam-submissions-modal'); }
+
+        // ============================================================
+        // نظام الامتحانات - جهة الطالب (أداء الامتحان والنتيجة والمراجعة)
+        // ============================================================
+        function confirmStartExam(courseId, examId) {
+            if (userExamAttempts[examId]) {
+                showAppAlert('غير مسموح', 'لقد خرجت من هذا الامتحان من قبل ولا يمكنك الدخول مرة أخرى.', 'error');
+                return;
+            }
+            showAppAlert(
+                'بدء الامتحان',
+                'هل أنت متأكد من دخول الامتحان الآن؟ بمجرد الدخول سيبدأ العد التنازلي، ولن تتمكن من الدخول مرة أخرى إذا خرجت قبل التسليم أو بعده.',
+                'confirm',
+                () => beginExamSession(courseId, examId),
+                true
+            );
+        }
+
+        async function beginExamSession(courseId, examId) {
+            const course = globalCoursesData[courseId];
+            if (!course) return;
+            const exam = (course.exams || []).find(e => e.id === examId);
+            if (!exam || !exam.questions || exam.questions.length === 0) return;
+            if (userExamAttempts[examId]) return;
+
+            currentExamSession = {
+                courseId,
+                courseTitle: course.title,
+                examId,
+                exam,
+                answers: new Array(exam.questions.length).fill(null),
+                currentIndex: 0,
+                remainingSeconds: exam.duration * 60,
+                totalSeconds: exam.duration * 60,
+                timerInterval: null
+            };
+
+            // نسجل إن الطالب بدأ الامتحان فوراً، عشان لو خرج من غير تسليم يتقفل عليه
+            await recordExamAttemptStarted(courseId, examId);
+
+            enableExamExitGuard();
+            renderExamTakingQuestion();
+            startExamCountdownTimer();
+            navigateTo('exam-taking');
+        }
+
+        // ============================================================
+        // حماية الخروج أثناء الامتحان (تحذير قبل مغادرة الصفحة/المنصة)
+        // ============================================================
+        function examBeforeUnloadHandler(e) {
+            if (!currentExamSession || !currentExamSession.exam) return;
+            e.preventDefault();
+            e.returnValue = 'أنت في منتصف امتحان الآن. هل أنت متأكد من الخروج؟ لن تتمكن من الدخول مرة أخرى إذا خرجت الآن.';
+            return e.returnValue;
+        }
+
+        function enableExamExitGuard() {
+            window.addEventListener('beforeunload', examBeforeUnloadHandler);
+        }
+
+        function disableExamExitGuard() {
+            window.removeEventListener('beforeunload', examBeforeUnloadHandler);
+        }
+
+        // زرار الخروج اليدوي من صفحة الامتحان (لأن شريط التنقل مخفي أثناء الامتحان)
+        function confirmExitExamManually() {
+            if (!currentExamSession || !currentExamSession.exam) return;
+            showAppAlert(
+                'الخروج من الامتحان',
+                'هل أنت متأكد من الخروج الآن؟ لن تتمكن من الدخول لهذا الامتحان مرة أخرى، حتى لو لم تسلمه.',
+                'confirm',
+                () => {
+                    const courseId = currentExamSession.courseId;
+                    stopExamCountdownTimer();
+                    disableExamExitGuard();
+                    currentExamSession = null;
+                    navigateTo('course-details');
+                    if (courseId) { openCourseDetails(courseId); switchCourseDetailsTab('exams'); }
+                },
+                true
+            );
+        }
+
+        function startExamCountdownTimer() {
+            stopExamCountdownTimer();
+            updateExamTimerDisplay();
+            currentExamSession.timerInterval = setInterval(() => {
+                if (!currentExamSession) return;
+                currentExamSession.remainingSeconds--;
+                if (currentExamSession.remainingSeconds <= 0) {
+                    currentExamSession.remainingSeconds = 0;
+                    updateExamTimerDisplay();
+                    stopExamCountdownTimer();
+                    finalizeSubmitExam(true);
+                    return;
+                }
+                updateExamTimerDisplay();
+            }, 1000);
+        }
+
+        function stopExamCountdownTimer() {
+            if (currentExamSession && currentExamSession.timerInterval) {
+                clearInterval(currentExamSession.timerInterval);
+                currentExamSession.timerInterval = null;
+            }
+        }
+
+        function formatExamTime(totalSeconds) {
+            const safeSeconds = Math.max(0, Math.floor(totalSeconds || 0));
+            const m = Math.floor(safeSeconds / 60);
+            const s = safeSeconds % 60;
+            return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function updateExamTimerDisplay() {
+            const el = document.getElementById('exam-timer-text');
+            if (el && currentExamSession) el.innerText = formatExamTime(currentExamSession.remainingSeconds);
+        }
+
+        function renderExamQuestionsNav() {
+            const nav = document.getElementById('exam-questions-nav');
+            if (!nav || !currentExamSession) return;
+            nav.innerHTML = '';
+            currentExamSession.exam.questions.forEach((q, idx) => {
+                const isCurrent = idx === currentExamSession.currentIndex;
+                const isAnswered = currentExamSession.answers[idx] !== null && currentExamSession.answers[idx] !== undefined;
+                let cls = 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300';
+                let icon = '';
+                if (isCurrent) {
+                    cls = 'bg-brand-primary text-white shadow-md';
+                } else if (isAnswered) {
+                    cls = 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300';
+                    icon = '<i class="fa-solid fa-circle-check"></i>';
+                }
+                nav.innerHTML += `
+                    <button onclick="examGoToQuestion(${idx})" class="exam-question-nav-btn ${cls}">
+                        <span>السؤال ${idx + 1}</span> ${icon}
+                    </button>
+                `;
+            });
+        }
+
+        function renderExamTakingQuestion() {
+            if (!currentExamSession) return;
+            const { exam, currentIndex, answers, courseTitle } = currentExamSession;
+            const question = exam.questions[currentIndex];
+
+            document.getElementById('exam-taking-progress').innerText = `السؤال ${currentIndex + 1} / ${exam.questions.length}`;
+            document.getElementById('exam-taking-subject').innerText = `${exam.title} - ${courseTitle}`;
+            document.getElementById('exam-question-text').innerText = question.text;
+
+            const imgWrap = document.getElementById('exam-question-image-wrap');
+            const imgEl = document.getElementById('exam-question-image');
+            if (question.image) {
+                imgEl.src = question.image;
+                imgWrap.classList.remove('hidden');
+            } else {
+                imgEl.src = '';
+                imgWrap.classList.add('hidden');
+            }
+
+            const optionsContainer = document.getElementById('exam-options-container');
+            optionsContainer.innerHTML = '';
+            question.options.forEach((opt, idx) => {
+                const selected = answers[currentIndex] === idx;
+                optionsContainer.innerHTML += `
+                    <button onclick="selectExamAnswerOption(${idx})"
+                            class="flex items-center gap-3 text-right border rounded-xl p-4 transition ${selected ? 'border-brand-primary bg-indigo-50 dark:bg-indigo-500/10' : 'border-slate-200 dark:border-slate-600 hover:border-brand-primary/50'}">
+                        <span class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${selected ? 'border-brand-primary' : 'border-slate-300 dark:border-slate-500'}">
+                            ${selected ? '<span class="w-2.5 h-2.5 rounded-full bg-brand-primary"></span>' : ''}
+                        </span>
+                        <span class="text-sm font-bold text-slate-700 dark:text-slate-200 no-select">${opt}</span>
+                    </button>
+                `;
+            });
+
+            const isLast = currentIndex === exam.questions.length - 1;
+            const nextBtn = document.getElementById('exam-next-btn');
+            document.getElementById('exam-next-btn-text').innerText = isLast ? 'تسليم الامتحان' : 'السؤال التالي';
+            if (isLast) {
+                nextBtn.classList.remove('bg-orange-500', 'hover:bg-orange-600');
+                nextBtn.classList.add('bg-emerald-500', 'hover:bg-emerald-600');
+            } else {
+                nextBtn.classList.add('bg-orange-500', 'hover:bg-orange-600');
+                nextBtn.classList.remove('bg-emerald-500', 'hover:bg-emerald-600');
+            }
+            const prevBtn = document.getElementById('exam-prev-btn');
+            if (currentIndex === 0) prevBtn.classList.add('invisible'); else prevBtn.classList.remove('invisible');
+
+            renderExamQuestionsNav();
+        }
+
+        function selectExamAnswerOption(idx) {
+            if (!currentExamSession) return;
+            currentExamSession.answers[currentExamSession.currentIndex] = idx;
+            renderExamTakingQuestion();
+        }
+
+        function examGoToQuestion(idx) {
+            if (!currentExamSession) return;
+            currentExamSession.currentIndex = idx;
+            renderExamTakingQuestion();
+            closeExamMobileNav();
+        }
+
+        function examGoPrev() {
+            if (!currentExamSession) return;
+            if (currentExamSession.currentIndex > 0) {
+                currentExamSession.currentIndex--;
+                renderExamTakingQuestion();
+            }
+        }
+
+        function examGoNext() {
+            if (!currentExamSession) return;
+            const isLast = currentExamSession.currentIndex === currentExamSession.exam.questions.length - 1;
+            if (isLast) {
+                confirmSubmitExam();
+            } else {
+                currentExamSession.currentIndex++;
+                renderExamTakingQuestion();
+            }
+        }
+
+        function confirmSubmitExam() {
+            if (!currentExamSession) return;
+            const unanswered = currentExamSession.answers.filter(a => a === null || a === undefined).length;
+            const msg = unanswered > 0
+                ? `لسه فيه ${unanswered} سؤال من غير إجابة. هل أنت متأكد من تسليم الامتحان الآن؟`
+                : 'هل أنت متأكد من تسليم الامتحان؟ لن تتمكن من التعديل بعد التسليم.';
+            showAppAlert('تسليم الامتحان', msg, 'confirm', () => finalizeSubmitExam(false), true);
+        }
+
+        async function finalizeSubmitExam(autoSubmitted) {
+            if (!currentExamSession) return;
+            stopExamCountdownTimer();
+            disableExamExitGuard();
+
+            const { exam, answers, courseId, examId, courseTitle, totalSeconds, remainingSeconds } = currentExamSession;
+            let correctCount = 0;
+            exam.questions.forEach((q, idx) => {
+                if (answers[idx] === q.correctIndex) correctCount++;
+            });
+            const total = exam.questions.length;
+            const wrongCount = total - correctCount;
+            const score = Math.round((correctCount / total) * 100);
+            const passed = score >= 50;
+            const timeTakenSeconds = totalSeconds - remainingSeconds;
+
+            const submission = {
+                studentEmail: activeUser.email,
+                studentName: activeUser.name || activeUser.email,
+                courseId,
+                courseTitle,
+                examId,
+                examTitle: exam.title,
+                score,
+                correctCount,
+                wrongCount,
+                totalQuestions: total,
+                answers,
+                timeTakenSeconds,
+                passed,
+                autoSubmitted: !!autoSubmitted,
+                submittedAt: new Date().toISOString()
+            };
+
+            showLoadingOverlay('جاري تسليم الامتحان...');
+            try {
+                await window.fs.addDoc(window.fs.collection(window.db, "exam_submissions"), submission);
+                userExamSubmissions[examId] = submission;
+                hideLoadingOverlay();
+                showExamResultPage(submission, exam);
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        function viewExamResult(courseId, examId) {
+            const submission = userExamSubmissions[examId];
+            const course = globalCoursesData[courseId];
+            const exam = course && (course.exams || []).find(e => e.id === examId);
+            if (!submission || !exam) return;
+            showExamResultPage(submission, exam);
+        }
+
+        function showExamResultPage(submission, exam) {
+            currentExamSession = { exam, submission }; // نحتفظ بيها لغرض المراجعة فقط بعد التسليم
+            const container = document.getElementById('exam-result-container');
+            const passed = submission.passed;
+
+            container.innerHTML = `
+                <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-8 text-center shadow-sm">
+                    <div class="w-20 h-20 mx-auto rounded-full flex items-center justify-center text-3xl mb-4 ${passed ? 'bg-emerald-100 text-emerald-500' : 'bg-rose-100 text-rose-500'}">
+                        <i class="fa-solid ${passed ? 'fa-circle-check' : 'fa-circle-xmark'}"></i>
+                    </div>
+                    <h2 class="text-2xl font-black text-brand-dark dark:text-white mb-1">${submission.examTitle}</h2>
+                    <p class="text-sm font-bold ${passed ? 'text-emerald-600' : 'text-rose-500'} mb-6">${passed ? 'مبروك! لقد نجحت في الامتحان 🎉' : 'للأسف لم تحقق درجة النجاح'}</p>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-4">
+                            <p class="text-2xl font-black text-brand-primary">${submission.score}%</p>
+                            <p class="text-[11px] text-slate-400 font-bold mt-1">الدرجة</p>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-4">
+                            <p class="text-2xl font-black text-emerald-500">${submission.correctCount}</p>
+                            <p class="text-[11px] text-slate-400 font-bold mt-1">إجابات صحيحة</p>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-4">
+                            <p class="text-2xl font-black text-rose-500">${submission.wrongCount}</p>
+                            <p class="text-[11px] text-slate-400 font-bold mt-1">إجابات خاطئة</p>
+                        </div>
+                        <div class="bg-slate-50 dark:bg-slate-700/50 rounded-2xl p-4">
+                            <p class="text-2xl font-black text-slate-700 dark:text-slate-200">${formatExamTime(submission.timeTakenSeconds)}</p>
+                            <p class="text-[11px] text-slate-400 font-bold mt-1">الوقت المستغرق</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row gap-3 justify-center">
+                        <button onclick="reviewExamAnswers()" class="bg-brand-primary text-white font-bold px-6 py-3 rounded-xl hover:bg-indigo-700 transition">
+                            <i class="fa-solid fa-magnifying-glass ml-1"></i> مراجعة الإجابات
+                        </button>
+                        <button onclick="openCourseDetails('${submission.courseId}'); switchCourseDetailsTab('exams');" class="bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold px-6 py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition">
+                            <i class="fa-solid fa-arrow-right ml-1"></i> العودة للدورة
+                        </button>
+                    </div>
+                </div>
+                <div id="exam-review-container" class="mt-6 space-y-4"></div>
+            `;
+
+            navigateTo('exam-result');
+        }
+
+        function reviewExamAnswers() {
+            if (!currentExamSession || !currentExamSession.exam || !currentExamSession.submission) return;
+            const { exam, submission } = currentExamSession;
+            const reviewContainer = document.getElementById('exam-review-container');
+            if (!reviewContainer) return;
+
+            reviewContainer.innerHTML = exam.questions.map((q, idx) => {
+                const selectedIdx = submission.answers[idx];
+                const optionsHtml = q.options.map((opt, oIdx) => {
+                    let cls = 'border-slate-200 dark:border-slate-600';
+                    let icon = '';
+                    if (oIdx === q.correctIndex) {
+                        cls = 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10';
+                        icon = '<i class="fa-solid fa-circle-check text-emerald-500"></i>';
+                    } else if (oIdx === selectedIdx) {
+                        cls = 'border-rose-500 bg-rose-50 dark:bg-rose-500/10';
+                        icon = '<i class="fa-solid fa-circle-xmark text-rose-500"></i>';
+                    }
+                    return `
+                        <div class="flex items-center justify-between gap-2 border rounded-xl p-3 text-sm font-bold text-slate-700 dark:text-slate-200 ${cls}">
+                            <span>${opt}</span> ${icon}
+                        </div>
+                    `;
+                }).join('');
+
+                return `
+                    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5">
+                        <p class="text-sm font-black text-slate-800 dark:text-white mb-3">${idx + 1}. ${q.text}</p>
+                        <div class="grid md:grid-cols-2 gap-2">${optionsHtml}</div>
+                    </div>
+                `;
+            }).join('');
         }
 
         function hideSplashScreen() {
@@ -5515,6 +6615,237 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
             const isDark = document.documentElement.classList.toggle('dark');
             localStorage.setItem('masar-theme', isDark ? 'dark' : 'light');
         }
+
+        // ==================== شهادة إتمام الكورس (PDF) ====================
+        // ==================== شهادة إتمام الكورس (PDF) ====================
+        // ملحوظة: بنرسم الشهادة مباشرة على <canvas> بدل تحويل عناصر HTML لصورة،
+        // لأن مكتبات تحويل الـ DOM لصورة (زي html2canvas) بتفشل في رسم النص العربي
+        // بشكل صحيح (الحروف بتتفكك ومتوصلش ببعض). الرسم المباشر على الكانفاس
+        // بيستخدم نفس محرك رسم النصوص اللي المتصفح بيستخدمه في أي صفحة عادية،
+        // فبيطلع عربي سليم 100%.
+        function roundRectPath(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+        }
+
+        function drawSpacedText(ctx, text, cx, y, font, color, spacing) {
+            ctx.font = font;
+            ctx.fillStyle = color;
+            ctx.textAlign = 'left';
+            ctx.direction = 'ltr';
+            let totalW = 0;
+            for (const ch of text) totalW += ctx.measureText(ch).width + spacing;
+            totalW -= spacing;
+            let x = cx - totalW / 2;
+            for (const ch of text) {
+                ctx.fillText(ch, x, y);
+                x += ctx.measureText(ch).width + spacing;
+            }
+        }
+
+        async function generateCourseCertificate(courseId) {
+            const course = globalCoursesData[courseId];
+            if (!course || !activeUser) return;
+
+            if (typeof window.jspdf === 'undefined') {
+                showAppAlert('خطأ', 'تعذر تحميل مكتبة توليد الشهادة، تأكد من اتصالك بالإنترنت وحاول تاني.', 'error');
+                return;
+            }
+
+            const studentName = activeUser.name || 'الطالب';
+            const teacherName = course.teacherName || 'المعلم';
+            const dateStr = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' });
+            const certId = `MSR-${courseId.slice(-6).toUpperCase()}-${activeUser.email.slice(0, 3).toUpperCase()}-${Date.now().toString().slice(-5)}`;
+
+            showLoadingOverlay('جاري تجهيز الشهادة...');
+            try {
+                // نتأكد إن خطوط المنصة اتحمّلت فعلياً قبل الرسم عشان الحروف العربية تطلع متصلة صح
+                if (document.fonts && document.fonts.ready) {
+                    await document.fonts.ready;
+                }
+
+                const W = 1600, H = 1131;
+                const canvas = document.createElement('canvas');
+                canvas.width = W;
+                canvas.height = H;
+                const ctx = canvas.getContext('2d');
+                const cx = W / 2;
+
+                // خلفية
+                ctx.fillStyle = '#F8FAFC';
+                ctx.fillRect(0, 0, W, H);
+
+                // زخارف الزوايا (أرباع دوائر متدرجة شفافة بألوان الهوية)
+                function cornerBlob(bx, by, r, startAngle, endAngle) {
+                    const grad = ctx.createLinearGradient(bx - r, by - r, bx + r, by + r);
+                    grad.addColorStop(0, 'rgba(79,70,229,0.10)');
+                    grad.addColorStop(1, 'rgba(6,182,212,0.10)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.moveTo(bx, by);
+                    ctx.arc(bx, by, r, startAngle, endAngle);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                cornerBlob(W, 0, 340, Math.PI / 2, Math.PI);
+                cornerBlob(0, H, 340, -Math.PI / 2, 0);
+
+                // شريط علوي متدرج
+                const topGrad = ctx.createLinearGradient(0, 0, W, 0);
+                topGrad.addColorStop(0, '#4F46E5');
+                topGrad.addColorStop(1, '#06B6D4');
+                ctx.fillStyle = topGrad;
+                ctx.fillRect(0, 0, W, 18);
+
+                // الإطار المزدوج
+                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = '#4F46E5';
+                roundRectPath(ctx, 48, 48, W - 96, H - 96, 22);
+                ctx.stroke();
+
+                ctx.lineWidth = 1.2;
+                ctx.strokeStyle = 'rgba(6,182,212,0.5)';
+                roundRectPath(ctx, 60, 60, W - 120, H - 120, 16);
+                ctx.stroke();
+
+                // شعار المنصة: .masar (نص فقط، بدون أي دائرة أو حرف)
+                ctx.direction = 'ltr';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'alphabetic';
+                ctx.font = "800 46px Poppins, Cairo, sans-serif";
+                const masarText = 'masar';
+                const dotText = '.';
+                const masarWidth = ctx.measureText(masarText).width;
+                const dotWidth = ctx.measureText(dotText).width;
+                const logoTotalWidth = masarWidth + dotWidth;
+                const logoY = 270;
+                ctx.fillStyle = '#4F46E5';
+                ctx.fillText(dotText, cx - logoTotalWidth / 2, logoY);
+                ctx.fillStyle = '#0F172A';
+                ctx.fillText(masarText, cx - logoTotalWidth / 2 + dotWidth, logoY);
+
+                // CERTIFICATE OF COMPLETION
+                drawSpacedText(ctx, 'CERTIFICATE OF COMPLETION', cx, 320, "700 18px Cairo, sans-serif", '#06B6D4', 5);
+
+                // العنوان الرئيسي
+                ctx.direction = 'rtl';
+                ctx.textAlign = 'center';
+                ctx.font = "800 50px Cairo, sans-serif";
+                ctx.fillStyle = '#0F172A';
+                ctx.fillText('شهادة إتمام كورس', cx, 400);
+
+                // خط فاصل متدرج تحت العنوان
+                const dividerGrad = ctx.createLinearGradient(cx - 65, 0, cx + 65, 0);
+                dividerGrad.addColorStop(0, '#4F46E5');
+                dividerGrad.addColorStop(1, '#06B6D4');
+                ctx.fillStyle = dividerGrad;
+                roundRectPath(ctx, cx - 65, 428, 130, 4, 2);
+                ctx.fill();
+
+                // "تشهد منصة مسار..."
+                ctx.font = "600 22px Cairo, sans-serif";
+                ctx.fillStyle = '#64748B';
+                ctx.fillText('تشهد منصة مسار التعليمية بأن الطالب/ة', cx, 485);
+
+                // اسم الطالب
+                ctx.font = "800 48px Cairo, sans-serif";
+                ctx.fillStyle = '#4F46E5';
+                ctx.fillText(studentName, cx, 555);
+
+                // "قد أتمّ..."
+                ctx.font = "600 22px Cairo, sans-serif";
+                ctx.fillStyle = '#64748B';
+                ctx.fillText('قد أتمّ بنجاح جميع حصص كورس', cx, 605);
+
+                // اسم الكورس
+                ctx.font = "800 32px Cairo, sans-serif";
+                ctx.fillStyle = '#0F172A';
+                ctx.fillText(`"${course.title}"`, cx, 650);
+
+                // اسم المعلم
+                ctx.font = "600 18px Cairo, sans-serif";
+                ctx.fillStyle = '#94A3B8';
+                ctx.fillText(`تحت إشراف المعلم: ${teacherName}`, cx, 690);
+
+                // خط فاصل أفقي فوق الفوتر
+                ctx.strokeStyle = '#E2E8F0';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(cx - 340, 770);
+                ctx.lineTo(cx + 340, 770);
+                ctx.stroke();
+
+                // تاريخ الإصدار
+                ctx.direction = 'rtl';
+                ctx.textAlign = 'center';
+                ctx.font = "600 15px Cairo, sans-serif";
+                ctx.fillStyle = '#94A3B8';
+                ctx.fillText('تاريخ الإصدار', cx + 200, 815);
+                ctx.font = "800 19px Cairo, sans-serif";
+                ctx.fillStyle = '#334155';
+                ctx.fillText(dateStr, cx + 200, 845);
+
+                // رقم الشهادة
+                ctx.font = "600 15px Cairo, sans-serif";
+                ctx.fillStyle = '#94A3B8';
+                ctx.fillText('رقم الشهادة', cx - 200, 815);
+                ctx.direction = 'ltr';
+                ctx.font = "800 19px Cairo, sans-serif";
+                ctx.fillStyle = '#334155';
+                ctx.fillText(certId, cx - 200, 845);
+
+                // دائرة الختم (علامة صح) في المنتصف بين التاريخ ورقم الشهادة
+                const sealGrad = ctx.createLinearGradient(cx - 40, 780, cx + 40, 860);
+                sealGrad.addColorStop(0, '#4F46E5');
+                sealGrad.addColorStop(1, '#06B6D4');
+                ctx.fillStyle = sealGrad;
+                ctx.beginPath();
+                ctx.arc(cx, 820, 40, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ffffff';
+                ctx.font = "700 30px Cairo, sans-serif";
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('✓', cx, 823);
+                ctx.textBaseline = 'alphabetic';
+
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [W, H] });
+                pdf.addImage(imgData, 'PNG', 0, 0, W, H);
+                pdf.save(`شهادة-${course.title}-${studentName}.pdf`);
+            } catch (error) {
+                console.error('Certificate generation error:', error);
+                showAppAlert('فشل التحميل', 'حدث خطأ أثناء توليد الشهادة، حاول مرة أخرى.', 'error');
+            } finally {
+                hideLoadingOverlay();
+            }
+        }
+
+        // إجراءات رادعة إضافية أثناء الامتحان: منع النسخ ومحاولة تقليل استخدام أدوات المطور
+        // ملحوظة: لا يوجد أي أسلوب في المتصفح يمنع السكرين شوت أو التسجيل بشكل كامل ومضمون 100%،
+        // هذه فقط إجراءات رادعة لتصعيب الأمر.
+        document.addEventListener('copy', function (e) {
+            if (document.body.classList.contains('exam-mode-active')) e.preventDefault();
+        });
+        document.addEventListener('cut', function (e) {
+            if (document.body.classList.contains('exam-mode-active')) e.preventDefault();
+        });
+        document.addEventListener('contextmenu', function (e) {
+            if (document.body.classList.contains('exam-mode-active')) e.preventDefault();
+        });
+        document.addEventListener('keydown', function (e) {
+            if (!document.body.classList.contains('exam-mode-active')) return;
+            const key = (e.key || '').toLowerCase();
+            const blockedCombo = (e.ctrlKey || e.metaKey) && ['c', 'x', 'u', 'p', 's'].includes(key);
+            const blockedDevtools = key === 'f12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && ['i', 'j', 'c'].includes(key));
+            if (blockedCombo || blockedDevtools) e.preventDefault();
+        });
 
         window.addEventListener('load', () => {
             setTimeout(hideSplashScreen, 900);
