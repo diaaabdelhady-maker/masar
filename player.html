@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0F172A">
+<title>مسار بلاير | Masar Player</title>
+<link rel="icon" type="image/svg+xml" href="./icon.svg">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@800&display=swap" rel="stylesheet">
+<style>
+    html, body { height: 100%; margin: 0; background: #020617; font-family: 'Cairo', sans-serif; overscroll-behavior: none; }
+    body { user-select: none; -webkit-user-select: none; }
+    .fade-in { animation: fadeIn .4s ease both; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes floatChar { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+    .float-char { animation: floatChar 3.2s ease-in-out infinite; }
+
+    #video-stage-container { position: fixed; inset: 0; background: #000; overflow: hidden; }
+    #yt-player-target, #yt-player-target iframe, #yt-player-instance, #yt-player-instance iframe { width: 100% !important; height: 100% !important; }
+    #native-video-el { width: 100%; height: 100%; object-fit: contain; background: #000; }
+
+    #video-loading-line { position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, transparent, #22d3ee, transparent); transform: translateX(-100%); opacity: 0; z-index: 10; transition: opacity .2s; }
+
+    #custom-action-badge { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(.9); z-index: 20; opacity: 0; pointer-events: none; transition: all .2s; background: rgba(15,23,42,.9); border: 1px solid rgba(34,211,238,.4); color: #fff; padding: .6rem 1.3rem; border-radius: 9999px; font-weight: 700; }
+    #custom-action-badge.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+
+    #custom-center-play { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 20; width: 64px; height: 64px; border-radius: 9999px; background: rgba(15,23,42,.9); border: 2px solid #4F46E5; color: #4F46E5; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transition: all .3s; font-size: 1.5rem; }
+    #custom-center-play.show { opacity: 1; }
+
+    #video-control-bar { position: absolute; bottom: 12px; left: 12px; right: 12px; z-index: 30; display: flex; flex-direction: row-reverse; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; border-radius: 18px; background: rgba(15,23,42,.85); border: 1px solid rgba(51,65,85,.8); backdrop-filter: blur(10px); transition: all .4s ease; }
+    #video-control-bar.hide { opacity: 0; transform: translateY(100%); pointer-events: none; }
+
+    .ctrl-btn { width: 34px; height: 34px; border-radius: 12px; background: rgba(30,41,59,.8); border: 1px solid #334155; color: #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: .8rem; transition: all .2s; flex-shrink: 0; }
+    .ctrl-btn:hover { background: #334155; }
+    #btn-play-toggle { width: 38px; height: 38px; background: #4F46E5; color: #fff; box-shadow: 0 8px 18px -6px rgba(79,70,229,.4); }
+    #btn-play-toggle:hover { background: #4338ca; }
+
+    #progress-slider { width: 100%; height: 5px; background: #334155; border-radius: 9999px; appearance: none; cursor: pointer; accent-color: #4F46E5; }
+    #progress-slider:disabled { opacity: .5; cursor: not-allowed; }
+
+    #settings-popup-menu { position: absolute; bottom: 48px; right: 0; width: 15rem; padding: 1rem; border-radius: 20px; background: rgba(15,23,42,.97); border: 1px solid #334155; box-shadow: 0 20px 40px -12px rgba(0,0,0,.5); backdrop-filter: blur(16px); z-index: 50; }
+    .speed-btn, .quality-btn { padding: 4px 4px; font-size: 10px; font-weight: 700; border-radius: 8px; border: 1px solid #334155; background: rgba(30,41,59,.6); color: #cbd5e1; }
+    .speed-btn.active, .quality-btn.active { border-color: #4F46E5; background: rgba(79,70,229,.2); color: #818cf8; }
+
+    #video-click-area { position: absolute; inset: 0 0 76px 0; z-index: 15; cursor: pointer; }
+    #video-topbar { position: absolute; top: 0; left: 0; right: 0; z-index: 30; display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: linear-gradient(to bottom, rgba(0,0,0,.55), transparent); }
+
+    #masar-logo-watermark {
+        position: absolute; bottom: 16px; left: 12px; z-index: 12; pointer-events: none; user-select: none;
+        font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: -0.5px; 
+        color: rgba(255,255,255,.5); text-transform: lowercase; direction: ltr;
+    }
+    #masar-logo-watermark .dot { color: #4F46E5; margin-right: 2px; }
+
+    #qaid-watermark {
+        position: fixed; z-index: 999999; pointer-events: none; user-select: none;
+        font-weight: 800; font-size: 11px; letter-spacing: .15px; color: rgba(255,255,255,.96);
+        background: rgba(0,0,0,.34); border: 1px solid rgba(255,255,255,.12); border-radius: 9999px;
+        padding: 3px 9px 4px; white-space: nowrap; direction: ltr;
+        transition: opacity .2s ease;
+        backdrop-filter: blur(1.5px);
+    }
+
+    /* التايم لاين لازم يفضل LTR (يبدأ من الشمال) حتى في صفحة RTL، زي كل مشغلات الفيديو */
+    #video-control-bar .cb-progress-group { direction: ltr; }
+    #progress-slider { direction: ltr; }
+
+    #live-waiting-overlay { position: absolute; inset: 0; z-index: 25; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: rgba(2,6,23,.88); text-align: center; padding: 24px; }
+    #live-waiting-overlay.show { display: flex; }
+    .live-spinner { width: 46px; height: 46px; border-radius: 9999px; border: 4px solid rgba(79,70,229,.25); border-top-color: #4F46E5; animation: liveSpin 1s linear infinite; }
+    @keyframes liveSpin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body class="text-white">
+
+    <div id="idle-screen" class="fixed inset-0 flex items-center justify-center p-5 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950">
+        <div class="w-full max-w-sm text-center fade-in">
+            <div class="float-char mx-auto mb-6 w-40 h-40">
+                <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" class="w-full h-full">
+                    <ellipse cx="100" cy="180" rx="55" ry="10" fill="#000" opacity="0.25"/>
+                    <circle cx="100" cy="70" r="34" fill="#FBCFAA"/>
+                    <path d="M66 62 Q100 30 134 62 L134 50 Q100 20 66 50 Z" fill="#312E81"/>
+                    <rect x="78" y="95" width="44" height="60" rx="16" fill="#4F46E5"/>
+                    <rect x="60" y="100" width="18" height="50" rx="9" fill="#4F46E5"/>
+                    <rect x="122" y="100" width="18" height="50" rx="9" fill="#4F46E5"/>
+                    <circle cx="60" cy="152" r="9" fill="#FBCFAA"/>
+                    <circle cx="140" cy="152" r="9" fill="#FBCFAA"/>
+                    <circle cx="88" cy="70" r="4" fill="#1E293B"/>
+                    <circle cx="112" cy="70" r="4" fill="#1E293B"/>
+                    <path d="M88 84 Q100 92 112 84" stroke="#1E293B" stroke-width="3" fill="none" stroke-linecap="round"/>
+                    <rect x="86" y="150" width="28" height="34" rx="8" fill="#1E293B"/>
+                    <circle cx="140" cy="120" r="22" fill="#06B6D4" opacity="0.15"/>
+                    <path d="M132 120 h16 M140 112 v16" stroke="#06B6D4" stroke-width="4" stroke-linecap="round"/>
+                </svg>
+            </div>
+            <h1 class="text-xl font-black mb-2">في انتظار وصول ضغطك على المحاضرة</h1>
+            <p class="text-sm leading-7 text-slate-400">افتح منصة مسار من المتصفح وادخل على أي حصة، وهتوصلك هنا تلقائياً وتشتغل فوراً.</p>
+            <div class="mt-6 rounded-2xl border border-cyan-400/20 bg-cyan-500/5 px-4 py-3 text-xs font-bold text-cyan-300">
+                النظام جاهز ويعمل في وضع الاستعداد الآمن
+            </div>
+        </div>
+    </div>
+
+    <div id="error-screen" class="hidden fixed inset-0 flex items-center justify-center p-5 bg-slate-950">
+        <div class="w-full max-w-sm text-center fade-in">
+            <div class="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-rose-500/15 text-rose-400 text-2xl">✕</div>
+            <h1 class="text-lg font-black mb-2">تعذر فتح الحصة</h1>
+            <p id="error-message" class="text-sm leading-7 text-slate-400">الرابط منتهي الصلاحية أو غير صالح. ارجع للمنصة وادخل على الحصة تاني.</p>
+        </div>
+    </div>
+
+    <div id="video-stage-container" class="hidden">
+        <div id="video-loading-line"></div>
+        <div id="yt-player-target" class="absolute inset-0 w-full h-full"></div>
+        <video id="native-video-el" class="hidden" playsinline></video>
+
+        <div id="video-topbar">
+            <span id="fs-lesson-title" class="text-sm font-bold truncate max-w-[70%]">عرض الحصة</span>
+        </div>
+
+        <div id="video-click-area"></div>
+        <div id="custom-action-badge"><span id="badge-text-val">+10s</span></div>
+        <div id="custom-center-play"><i class="fa-solid fa-play"></i></div>
+
+        <div id="live-waiting-overlay">
+            <div class="live-spinner"></div>
+            <p class="text-base font-black text-white">البث لم يبدأ بعد، يرجى الانتظار</p>
+            <p class="text-xs text-slate-400">هنوصلك بالبث تلقائياً أول ما يبدأ المعلم</p>
+        </div>
+
+        <div id="video-control-bar">
+            <div class="flex items-center gap-2 shrink-0">
+                <button id="btn-back10" type="button" class="ctrl-btn"><i class="fa-solid fa-rotate-left"></i></button>
+                <button id="btn-play-toggle" type="button" class="ctrl-btn"><i class="fa-solid fa-play"></i></button>
+                <button id="btn-forward10" type="button" class="ctrl-btn"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+            <div class="cb-progress-group flex items-center gap-2 flex-1 min-w-0 justify-center">
+                <span id="time-current" class="text-xs font-mono font-bold text-slate-300 min-w-[38px] text-center shrink-0">00:00</span>
+                <input id="progress-slider" type="range" min="0" max="100" value="0">
+                <span id="time-duration" class="text-xs font-mono font-bold text-slate-400 min-w-[38px] text-center shrink-0">00:00</span>
+            </div>
+            <div class="flex items-center gap-2 shrink-0 relative">
+                <button id="btn-settings-toggle" type="button" class="ctrl-btn"><i class="fa-solid fa-gear"></i></button>
+                <div id="settings-popup-menu" class="hidden">
+                    <span class="text-[11px] font-extrabold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5 mb-2"><i class="fa-solid fa-gauge-high"></i> السرعة</span>
+                    <div class="grid grid-cols-5 gap-1 mb-3">
+                        <button class="speed-btn" data-speed="0.75">0.75×</button>
+                        <button class="speed-btn active" data-speed="1">1×</button>
+                        <button class="speed-btn" data-speed="1.25">1.25×</button>
+                        <button class="speed-btn" data-speed="1.5">1.5×</button>
+                        <button class="speed-btn" data-speed="2">2×</button>
+                    </div>
+                    <span class="text-[11px] font-extrabold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5 mb-2"><i class="fa-solid fa-sliders"></i> الجودة</span>
+                    <div class="grid grid-cols-5 gap-1">
+                        <button class="quality-btn active" data-quality="auto">تلقائي</button>
+                        <button class="quality-btn" data-quality="hd1080">1080</button>
+                        <button class="quality-btn" data-quality="hd720">720</button>
+                        <button class="quality-btn" data-quality="large">480</button>
+                        <button class="quality-btn" data-quality="medium">360</button>
+                    </div>
+                </div>
+                <button id="btn-mute-toggle" type="button" class="ctrl-btn"><i class="fa-solid fa-volume-high"></i></button>
+                <button id="btn-fullscreen-toggle" type="button" class="ctrl-btn"><i class="fa-solid fa-expand"></i></button>
+            </div>
+        </div>
+        <div id="masar-logo-watermark" class="hidden"><span class="dot">.</span>masar</div>
+    </div>
+
+    <div id="qaid-watermark" class="hidden"></div>
+
+<script>
+    const LESSON_TOKEN_PREFIX = 'masar_lesson_token:';
+
+    let ytPlayer = null;
+    let nativeVideoEl = null;
+    let ytTimer = null;
+    let controlsHideTimeout = null;
+    let centerIconHideTimeout = null;
+    let clickTimeout = null;
+    let currentSpeed = 1;
+    let currentMode = null;
+    let currentLessonType = 'video';
+    let liveWatchTimer = null;
+
+    function showIdleScreen() {
+        document.getElementById('idle-screen').classList.remove('hidden');
+        document.getElementById('error-screen').classList.add('hidden');
+        document.getElementById('video-stage-container').classList.add('hidden');
+    }
+
+    function showErrorScreen(message) {
+        document.getElementById('idle-screen').classList.add('hidden');
+        document.getElementById('error-screen').classList.remove('hidden');
+        document.getElementById('video-stage-container').classList.add('hidden');
+        const msgEl = document.getElementById('error-message');
+        if (msgEl && message) msgEl.textContent = message;
+    }
+
+    function extractYouTubeId(url) {
+        if (!url) return "";
+        url = url.trim();
+        if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+        const patterns = [
+            /youtube\.com\/watch\?.*v=([a-zA-Z0-9_-]{11})/,
+            /youtube\.com\/live\/([a-zA-Z0-9_-]{11})/,
+            /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+            /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+            /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/
+        ];
+        for (const p of patterns) {
+            const m = url.match(p);
+            if (m && m[1]) return m[1];
+        }
+        return "";
+    }
+
+    function ensureYouTubeApi(callback) {
+        if (window.YT && window.YT.Player) { callback(); return; }
+        if (!document.getElementById('yt-iframe-api')) {
+            const script = document.createElement('script');
+            script.id = 'yt-iframe-api';
+            script.src = 'https://www.youtube.com/iframe_api';
+            script.async = true;
+            document.body.appendChild(script);
+        }
+        const prev = window.onYouTubeIframeAPIReady;
+        window.onYouTubeIframeAPIReady = function () { if (prev) prev(); callback(); };
+    }
+
+    function isTrustedVideoUrl(rawUrl) {
+        try {
+            const parsed = new URL(rawUrl);
+            const allowedProtocols = ['http:', 'https:'];
+            const allowedHosts = ['youtube.com', 'www.youtube.com', 'youtu.be', 'm.youtube.com', 'storage.googleapis.com', 'firebasestorage.googleapis.com'];
+            const host = parsed.hostname.toLowerCase();
+            if (!allowedProtocols.includes(parsed.protocol)) return false;
+            const isAllowedHost = allowedHosts.some(item => host === item || host.endsWith('.' + item));
+            const isDirectMedia = /\.(mp4|m3u8|webm|mp3|ogg)(\?.*)?$/i.test(parsed.pathname) || host.includes('cloudfront') || host.includes('akamai') || host.includes('vimeo');
+            return isAllowedHost || isDirectMedia;
+        } catch (e) { return false; }
+    }
+
+    function formatTime(seconds) {
+        const safe = Math.max(0, Math.floor(seconds || 0));
+        const m = Math.floor(safe / 60), s = safe % 60;
+        return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    }
+    function isFiniteNumber(v) { return typeof v === 'number' && Number.isFinite(v); }
+
+    function playVideo(payload) {
+        document.getElementById('idle-screen').classList.add('hidden');
+        document.getElementById('error-screen').classList.add('hidden');
+        const stage = document.getElementById('video-stage-container');
+        stage.classList.remove('hidden');
+        document.getElementById('fs-lesson-title').textContent = payload.lessonTitle || 'عرض الحصة';
+        currentLessonType = payload.lessonType === 'live' ? 'live' : 'video';
+
+        const videoId = extractYouTubeId(payload.lessonUrl);
+        if (videoId) {
+            currentMode = 'youtube';
+            initYouTubePlayer(videoId);
+        } else {
+            currentMode = 'native';
+            initNativeVideo(payload.lessonUrl);
+        }
+
+        if (payload.qaidNumber && payload.qaidNumber !== 'غير متاح') {
+            startQaidWatermark(payload.qaidNumber);
+        }
+        showMasarLogo();
+        initPlayerControls();
+
+        if (currentLessonType === 'live') {
+            watchForLiveStart();
+        }
+    }
+
+    // بيتابع لو البث المباشر لسه ما بداش فعلياً، وبيوري "البث لم يبدأ بعد" بدل ما الطالب يشوف شاشة فاضية أو خطأ
+    function showLiveWaitingOverlay(show) {
+        const el = document.getElementById('live-waiting-overlay');
+        if (el) el.classList.toggle('show', show);
+        const bar = document.getElementById('video-control-bar');
+        if (bar) bar.classList.toggle('hide', show);
+    }
+
+    function checkLiveStarted() {
+        if (playerIsPlaying()) {
+            showLiveWaitingOverlay(false);
+            if (liveWatchTimer) { clearInterval(liveWatchTimer); liveWatchTimer = null; }
+            return;
+        }
+        showLiveWaitingOverlay(true);
+    }
+
+    function watchForLiveStart() {
+        if (liveWatchTimer) clearInterval(liveWatchTimer);
+        setTimeout(checkLiveStarted, 6000);
+        liveWatchTimer = setInterval(checkLiveStarted, 5000);
+    }
+
+    function initYouTubePlayer(videoId) {
+        const target = document.getElementById('yt-player-target');
+        target.classList.remove('hidden');
+        document.getElementById('native-video-el').classList.add('hidden');
+        target.innerHTML = '<div id="yt-player-instance" class="w-full h-full"></div>';
+
+        ensureYouTubeApi(() => {
+            ytPlayer = new YT.Player('yt-player-instance', {
+                videoId: videoId,
+                width: '100%',
+                height: '100%',
+                playerVars: {
+                    autoplay: 1, rel: 0, modestbranding: 1, controls: 0,
+                    fs: 0, playsinline: 1, enablejsapi: 1, disablekb: 1
+                },
+                events: {
+                    onReady: (e) => {
+                        e.target.playVideo();
+                        syncPlayState();
+                        if (ytTimer) clearInterval(ytTimer);
+                        ytTimer = setInterval(syncProgress, 500);
+                        resetControlsTimer();
+                    },
+                    onStateChange: (e) => handleStateChange(e.data)
+                }
+            });
+        });
+    }
+
+    function initNativeVideo(url) {
+        document.getElementById('yt-player-target').classList.add('hidden');
+        const video = document.getElementById('native-video-el');
+        nativeVideoEl = video;
+        video.classList.remove('hidden');
+        video.src = url;
+        video.autoplay = true;
+        video.controls = false;
+        video.play().catch(() => {});
+        video.addEventListener('play', () => handleStateChange('playing'));
+        video.addEventListener('pause', () => handleStateChange('paused'));
+        video.addEventListener('timeupdate', syncProgress);
+        video.addEventListener('loadedmetadata', syncProgress);
+        resetControlsTimer();
+    }
+
+    function playerGetCurrentTime() {
+        if (currentMode === 'youtube') return ytPlayer && ytPlayer.getCurrentTime ? ytPlayer.getCurrentTime() : 0;
+        return nativeVideoEl ? nativeVideoEl.currentTime : 0;
+    }
+    function playerGetDuration() {
+        if (currentMode === 'youtube') return ytPlayer && ytPlayer.getDuration ? ytPlayer.getDuration() : 0;
+        return nativeVideoEl ? nativeVideoEl.duration : 0;
+    }
+    function playerSeekTo(t) {
+        if (currentMode === 'youtube') { if (ytPlayer && ytPlayer.seekTo) ytPlayer.seekTo(t, true); }
+        else if (nativeVideoEl) nativeVideoEl.currentTime = t;
+    }
+    function playerIsPlaying() {
+        if (currentMode === 'youtube') return ytPlayer && ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.PLAYING;
+        return nativeVideoEl && !nativeVideoEl.paused;
+    }
+    function playerTogglePlayPause() {
+        if (currentMode === 'youtube') {
+            if (!ytPlayer) return;
+            playerIsPlaying() ? ytPlayer.pauseVideo() : ytPlayer.playVideo();
+        } else if (nativeVideoEl) {
+            nativeVideoEl.paused ? nativeVideoEl.play() : nativeVideoEl.pause();
+        }
+    }
+    function playerSetSpeed(speed) {
+        if (currentMode === 'youtube') { if (ytPlayer && ytPlayer.setPlaybackRate) ytPlayer.setPlaybackRate(speed); }
+        else if (nativeVideoEl) nativeVideoEl.playbackRate = speed;
+    }
+    function playerMuteToggle() {
+        if (currentMode === 'youtube') {
+            if (!ytPlayer) return false;
+            if (ytPlayer.isMuted()) { ytPlayer.unMute(); return false; }
+            ytPlayer.mute(); return true;
+        } else if (nativeVideoEl) {
+            nativeVideoEl.muted = !nativeVideoEl.muted;
+            return nativeVideoEl.muted;
+        }
+        return false;
+    }
+
+    function getTimelineState() {
+        const current = playerGetCurrentTime();
+        const duration = playerGetDuration();
+        const safeCurrent = isFiniteNumber(current) ? current : 0;
+        const safeDuration = isFiniteNumber(duration) && duration > 0 ? duration : null;
+        if (safeDuration !== null) {
+            const value = (safeCurrent / safeDuration) * 100;
+            return { canSeek: true, currentValue: safeCurrent, duration: safeDuration, sliderValue: Math.min(100, Math.max(0, value)), currentText: formatTime(safeCurrent), durationText: formatTime(safeDuration) };
+        }
+        return { canSeek: false, currentValue: safeCurrent, duration: null, sliderValue: 0, currentText: formatTime(safeCurrent), durationText: '—' };
+    }
+
+    function syncProgress() {
+        const state = getTimelineState();
+        const slider = document.getElementById('progress-slider');
+        const tc = document.getElementById('time-current');
+        const td = document.getElementById('time-duration');
+        if (slider) { slider.value = state.sliderValue; slider.disabled = !state.canSeek; }
+        if (tc) tc.textContent = state.currentText;
+        if (td) td.textContent = state.durationText;
+    }
+
+    function syncPlayState() {
+        const btn = document.getElementById('btn-play-toggle');
+        if (btn) btn.innerHTML = playerIsPlaying() ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>';
+    }
+
+    function handleStateChange(state) {
+        syncPlayState();
+        const centerIcon = document.getElementById('custom-center-play');
+        const isPlaying = (window.YT && state === YT.PlayerState.PLAYING) || state === 'playing';
+        const isPaused = (window.YT && state === YT.PlayerState.PAUSED) || state === 'paused';
+        if (!centerIcon) return;
+        if (isPaused) {
+            if (centerIconHideTimeout) clearTimeout(centerIconHideTimeout);
+            centerIcon.innerHTML = '<i class="fa-solid fa-play"></i>';
+            centerIcon.classList.add('show');
+            showControls(true);
+        } else if (isPlaying) {
+            centerIcon.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            centerIcon.classList.add('show');
+            scheduleCenterIconHide();
+            showControls();
+            if (currentLessonType === 'live') {
+                showLiveWaitingOverlay(false);
+                if (liveWatchTimer) { clearInterval(liveWatchTimer); liveWatchTimer = null; }
+            }
+        }
+    }
+
+    function scheduleCenterIconHide() {
+        const centerIcon = document.getElementById('custom-center-play');
+        if (!centerIcon) return;
+        if (centerIconHideTimeout) clearTimeout(centerIconHideTimeout);
+        centerIconHideTimeout = setTimeout(() => {
+            if (playerIsPlaying()) centerIcon.classList.remove('show');
+        }, 1500);
+    }
+
+    function showControls(forceVisibleWhilePaused) {
+        const bar = document.getElementById('video-control-bar');
+        if (!bar) return;
+        bar.classList.remove('hide');
+        resetControlsTimer(forceVisibleWhilePaused);
+    }
+    function hideControls() {
+        const bar = document.getElementById('video-control-bar');
+        if (!bar || !playerIsPlaying()) return;
+        const menu = document.getElementById('settings-popup-menu');
+        if (menu && !menu.classList.contains('hidden')) return;
+        bar.classList.add('hide');
+    }
+    function resetControlsTimer(forceVisibleWhilePaused) {
+        if (controlsHideTimeout) clearTimeout(controlsHideTimeout);
+        if (!playerIsPlaying() || forceVisibleWhilePaused) return;
+        controlsHideTimeout = setTimeout(hideControls, 4000);
+    }
+
+    function showBadge(text) {
+        const badge = document.getElementById('custom-action-badge');
+        const val = document.getElementById('badge-text-val');
+        if (!badge || !val) return;
+        val.textContent = text;
+        badge.classList.add('show');
+        setTimeout(() => badge.classList.remove('show'), 550);
+    }
+
+    function seekRelative(sec) {
+        const state = getTimelineState();
+        if (!state.canSeek) return;
+        const target = Math.min(Math.max(0, state.currentValue + sec), state.duration || state.currentValue + sec);
+        playerSeekTo(target);
+        showBadge(sec > 0 ? `+${sec}s` : `${sec}s`);
+    }
+
+    function toggleVideoStageFullscreen() {
+        const stage = document.getElementById('video-stage-container');
+        const active = document.fullscreenElement || document.webkitFullscreenElement;
+        if (!active) {
+            const req = stage.requestFullscreen || stage.webkitRequestFullscreen;
+            if (req) req.call(stage).catch(() => {});
+        } else {
+            const exit = document.exitFullscreen || document.webkitExitFullscreen;
+            if (exit) exit.call(document);
+        }
+    }
+    function syncFullscreenButtonIcon() {
+        const fsBtn = document.getElementById('btn-fullscreen-toggle');
+        const stage = document.getElementById('video-stage-container');
+        if (!fsBtn || !stage) return;
+        const active = document.fullscreenElement === stage || document.webkitFullscreenElement === stage;
+        fsBtn.innerHTML = active ? '<i class="fa-solid fa-compress"></i>' : '<i class="fa-solid fa-expand"></i>';
+    }
+
+    function initPlayerControls() {
+        if (window.__masarPlayerControlsBound) return;
+        window.__masarPlayerControlsBound = true;
+
+        const stage = document.getElementById('video-stage-container');
+        const clickArea = document.getElementById('video-click-area');
+        const playBtn = document.getElementById('btn-play-toggle');
+        const backBtn = document.getElementById('btn-back10');
+        const forwardBtn = document.getElementById('btn-forward10');
+        const muteBtn = document.getElementById('btn-mute-toggle');
+        const fsBtn = document.getElementById('btn-fullscreen-toggle');
+        const slider = document.getElementById('progress-slider');
+        const settingsBtn = document.getElementById('btn-settings-toggle');
+        const settingsMenu = document.getElementById('settings-popup-menu');
+        const controlBar = document.getElementById('video-control-bar');
+
+        const onActivity = () => showControls();
+        [stage, controlBar, clickArea].forEach((el) => {
+            if (!el) return;
+            ['mousemove','mousedown','touchstart','touchmove','pointerdown','pointermove'].forEach(evt =>
+                el.addEventListener(evt, onActivity, { passive: true }));
+        });
+
+        document.addEventListener('fullscreenchange', syncFullscreenButtonIcon);
+        document.addEventListener('webkitfullscreenchange', syncFullscreenButtonIcon);
+        document.addEventListener('fullscreenchange', relocateQaidWatermarkForFullscreen);
+        document.addEventListener('webkitfullscreenchange', relocateQaidWatermarkForFullscreen);
+
+        clickArea.onclick = (e) => {
+            onActivity();
+            const rect = clickArea.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            if (clickTimeout) {
+                clearTimeout(clickTimeout);
+                clickTimeout = null;
+                x > rect.width / 2 ? seekRelative(10) : seekRelative(-10);
+            } else {
+                clickTimeout = setTimeout(() => { clickTimeout = null; playerTogglePlayPause(); }, 260);
+            }
+        };
+
+        playBtn.onclick = () => { onActivity(); playerTogglePlayPause(); };
+        backBtn.onclick = () => { onActivity(); seekRelative(-10); };
+        forwardBtn.onclick = () => { onActivity(); seekRelative(10); };
+        muteBtn.onclick = () => {
+            onActivity();
+            const muted = playerMuteToggle();
+            muteBtn.innerHTML = muted ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
+        };
+        fsBtn.onclick = () => { onActivity(); toggleVideoStageFullscreen(); };
+
+        if (slider) {
+            slider.oninput = () => {
+                onActivity();
+                const state = getTimelineState();
+                if (!state.canSeek) return;
+                const target = (slider.value / 100) * (state.duration || 0);
+                playerSeekTo(target);
+            };
+        }
+
+        settingsBtn.onclick = (e) => {
+            e.stopPropagation();
+            onActivity();
+            settingsMenu.classList.toggle('hidden');
+        };
+        document.addEventListener('click', (e) => {
+            if (!settingsMenu) return;
+            if (!e.target.closest('#settings-popup-menu') && !e.target.closest('#btn-settings-toggle')) {
+                settingsMenu.classList.add('hidden');
+                onActivity();
+            }
+        });
+
+        document.querySelectorAll('.speed-btn').forEach(btn => {
+            btn.onclick = () => {
+                onActivity();
+                currentSpeed = parseFloat(btn.dataset.speed);
+                playerSetSpeed(currentSpeed);
+                document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            };
+        });
+
+        document.querySelectorAll('.quality-btn').forEach(btn => {
+            btn.onclick = () => {
+                onActivity();
+                if (currentMode === 'youtube' && ytPlayer && ytPlayer.setPlaybackQuality) {
+                    ytPlayer.setPlaybackQuality(btn.dataset.quality);
+                }
+                document.querySelectorAll('.quality-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            };
+        });
+    }
+
+    document.addEventListener('contextmenu', (e) => e.preventDefault());
+    document.addEventListener('keydown', (e) => {
+        const key = (e.key || '').toLowerCase();
+        if ((e.ctrlKey || e.metaKey) && ['s','p','u'].includes(key)) e.preventDefault();
+        if (key === 'f12' || ((e.ctrlKey || e.metaKey) && e.shiftKey && ['i','j','c'].includes(key))) e.preventDefault();
+    });
+
+    let watermarkTimer = null;
+    let wmState = { x: 20, y: 20, dx: 1, dy: 1 };
+    function moveWatermark() {
+        const el = document.getElementById('qaid-watermark');
+        if (!el || el.classList.contains('hidden')) return;
+        const w = el.offsetWidth || 70, h = el.offsetHeight || 22;
+        const maxX = window.innerWidth - w - 20, maxY = window.innerHeight - h - 20;
+        if (maxX <= 0 || maxY <= 0) return;
+        if (wmState.x >= maxX || wmState.x <= 0) wmState.dx *= -1;
+        if (wmState.y >= maxY || wmState.y <= 0) wmState.dy *= -1;
+        wmState.x = Math.min(Math.max(wmState.x + wmState.dx * 8, 0), maxX);
+        wmState.y = Math.min(Math.max(wmState.y + wmState.dy * 8, 0), maxY);
+        el.style.left = wmState.x + 'px';
+        el.style.top = wmState.y + 'px';
+    }
+    function startQaidWatermark(qaidNumber) {
+        const el = document.getElementById('qaid-watermark');
+        if (!el || !qaidNumber) return;
+        el.textContent = String(qaidNumber);
+        el.classList.remove('hidden');
+        el.style.left = '20px'; el.style.top = '20px';
+        wmState = { x: 20, y: 20, dx: 1, dy: 1 };
+        if (watermarkTimer) clearInterval(watermarkTimer);
+        watermarkTimer = setInterval(moveWatermark, 120);
+    }
+
+    // تفضل العلامة المائية ظاهرة حتى في وضع ملء الشاشة - بننقلها جوه العنصر اللي دخل fullscreen
+    function relocateQaidWatermarkForFullscreen() {
+        const el = document.getElementById('qaid-watermark');
+        if (!el) return;
+        const fsEl = document.fullscreenElement || document.webkitFullscreenElement || null;
+        if (fsEl) {
+            if (el.parentElement !== fsEl) fsEl.appendChild(el);
+        } else if (el.parentElement !== document.body) {
+            document.body.appendChild(el);
+        }
+    }
+
+    function showMasarLogo() {
+        const el = document.getElementById('masar-logo-watermark');
+        if (el) el.classList.remove('hidden');
+    }
+
+    function consumeLessonToken() {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('token');
+        if (token) window.history.replaceState({}, document.title, window.location.pathname);
+        if (!token) { showIdleScreen(); return; }
+
+        const key = LESSON_TOKEN_PREFIX + token;
+        let raw = null;
+        try {
+            raw = localStorage.getItem(key);
+            localStorage.removeItem(key);
+        } catch (e) {
+            showErrorScreen('حدث خطأ أثناء قراءة بيانات الحصة.');
+            return;
+        }
+        if (!raw) { showErrorScreen('الرابط ده اتستخدم قبل كدا أو غير صالح. ارجع للمنصة وادخل على الحصة تاني.'); return; }
+
+        let payload;
+        try { payload = JSON.parse(raw); } catch (e) { showErrorScreen('بيانات الحصة تالفة. ارجع للمنصة وادخل على الحصة تاني.'); return; }
+
+        if (!payload.exp || Date.now() > Number(payload.exp)) {
+            showErrorScreen('انتهت صلاحية الرابط (صالح لمدة دقيقة واحدة فقط). ارجع للمنصة وادخل على الحصة تاني.');
+            return;
+        }
+        if (!isTrustedVideoUrl(payload.lessonUrl)) {
+            showErrorScreen('رابط الحصة غير موثوق ورفضناه لأسباب أمنية.');
+            return;
+        }
+        playVideo(payload);
+    }
+
+    consumeLessonToken();
+</script>
+</body>
+</html>

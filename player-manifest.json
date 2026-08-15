@@ -1,0 +1,24 @@
+{
+  "name": "مسار بلاير",
+  "short_name": "مسار بلاير",
+  "description": "تطبيق تشغيل الحصص الخاص بمنصة مسار التعليمية",
+  "start_url": "./player.html",
+  "scope": "./player.html",
+  "id": "./player.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#020617",
+  "theme_color": "#0F172A",
+  "lang": "ar",
+  "dir": "rtl",
+  "capture_links": "existing-client-navigate",
+  "handle_links": "preferred",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
