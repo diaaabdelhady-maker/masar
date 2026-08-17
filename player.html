@@ -84,22 +84,10 @@
     #video-control-bar .cb-progress-group { direction: ltr; }
     #progress-slider { direction: ltr; }
 
-    #live-waiting-overlay { position: absolute; inset: 0; z-index: 25; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: rgba(2,6,23,.88); text-align: center; padding: 24px; pointer-events: none; }
+    #live-waiting-overlay { position: absolute; inset: 0; z-index: 25; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: rgba(2,6,23,.88); text-align: center; padding: 24px; }
     #live-waiting-overlay.show { display: flex; }
     .live-spinner { width: 46px; height: 46px; border-radius: 9999px; border: 4px solid rgba(79,70,229,.25); border-top-color: #4F46E5; animation: liveSpin 1s linear infinite; }
     @keyframes liveSpin { to { transform: rotate(360deg); } }
-
-    /* أوفرلاي الإعلانات: بيظهر فوق الفيديو وبيكتم الصوت أول ما نكتشف إعلان، وبيختفي فورًا لما الإعلان يخلص */
-    #ad-block-overlay {
-        position: absolute; inset: 0; z-index: 40; display: none; flex-direction: column;
-        align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 24px;
-        background: rgba(2,6,23,.94); animation: adFadeIn .25s ease both;
-        /* pointer-events: none عن قصد -> عشان ضغطة المستخدم توصل مباشرة لزرار "تخطي الإعلان" الحقيقي بتاع يوتيوب اللي بيتعرض تحت الأوفرلاي ده */
-        pointer-events: none;
-    }
-    #ad-block-overlay.show { display: flex; }
-    @keyframes adFadeIn { from { opacity: 0; } to { opacity: 1; } }
-    #ad-block-overlay .ad-icon { width: 46px; height: 46px; border-radius: 9999px; background: rgba(79,70,229,.15); border: 1px solid rgba(79,70,229,.4); display: flex; align-items: center; justify-content: center; color: #818cf8; font-size: 1.1rem; }
 </style>
 </head>
 <body class="text-white">
@@ -155,14 +143,8 @@
 
         <div id="live-waiting-overlay">
             <div class="live-spinner"></div>
-            <p id="wait-overlay-title" class="text-base font-black text-white">البث لم يبدأ بعد، يرجى الانتظار</p>
-            <p id="wait-overlay-subtitle" class="text-xs text-slate-400">هنوصلك بالبث تلقائياً أول ما يبدأ المعلم</p>
-        </div>
-
-        <div id="ad-block-overlay">
-            <div class="ad-icon"><i class="fa-solid fa-spinner fa-spin"></i></div>
-            <p class="text-sm font-black text-white">يرجى الانتظار</p>
-            <p class="text-xs text-slate-400 max-w-[230px] leading-6">جاري تجهيز الحصة...</p>
+            <p class="text-base font-black text-white">البث لم يبدأ بعد، يرجى الانتظار</p>
+            <p class="text-xs text-slate-400">هنوصلك بالبث تلقائياً أول ما يبدأ المعلم</p>
         </div>
 
         <div id="video-control-bar">
@@ -297,10 +279,6 @@
         stage.classList.remove('hidden');
         document.getElementById('fs-lesson-title').textContent = payload.lessonTitle || 'عرض الحصة';
         currentLessonType = payload.lessonType === 'live' ? 'live' : 'video';
-        if (typeof resetAdState === 'function') resetAdState();
-        if (videoRealStartTimer) { clearInterval(videoRealStartTimer); videoRealStartTimer = null; }
-        if (liveWatchTimer) { clearInterval(liveWatchTimer); liveWatchTimer = null; }
-        hideWaitOverlay();
 
         const videoId = extractYouTubeId(payload.lessonUrl);
         if (videoId) {
@@ -319,54 +297,19 @@
 
         if (currentLessonType === 'live') {
             watchForLiveStart();
-        } else if (currentMode === 'youtube') {
-            watchForVideoRealStart();
         }
     }
 
     // بيتابع لو البث المباشر لسه ما بداش فعلياً، وبيوري "البث لم يبدأ بعد" بدل ما الطالب يشوف شاشة فاضية أو خطأ
-    // ونفس الأوفرلاي ده بقى بيتستخدم كمان في بداية أي فيديو عادي (مش بس البث) عشان يغطي أي إعلان بيتشغل قبل الحصة،
-    // وبيقفل صوت المشغل طول ما الأوفرلاي ظاهر، وبيفتحه تاني أول ما نتأكد إن المحتوى الحقيقي هو اللي شغال.
-    let userMutePreference = false;
-
-    function showWaitOverlay(title, subtitle) {
-        const el = document.getElementById('live-waiting-overlay');
-        if (el) el.classList.add('show');
-        const t = document.getElementById('wait-overlay-title');
-        const s = document.getElementById('wait-overlay-subtitle');
-        if (t && title) t.textContent = title;
-        if (s && subtitle) s.textContent = subtitle;
-        const bar = document.getElementById('video-control-bar');
-        if (bar) bar.classList.add('hide');
-        try { if (ytPlayer && ytPlayer.mute) ytPlayer.mute(); } catch (e) {}
-    }
-
-    function hideWaitOverlay() {
-        const el = document.getElementById('live-waiting-overlay');
-        if (el) el.classList.remove('show');
-        try { if (ytPlayer && ytPlayer.unMute && !userMutePreference) ytPlayer.unMute(); } catch (e) {}
-        resetControlsTimer();
-    }
-
     function showLiveWaitingOverlay(show) {
-        if (show) showWaitOverlay('البث لم يبدأ بعد، يرجى الانتظار', 'هنوصلك بالبث تلقائياً أول ما يبدأ المعلم');
-        else hideWaitOverlay();
-    }
-
-    // إعلانات يوتيوب (السابقة للفيديو أو للبث) بتكون في الغالب قصيرة جداً (ثواني لدقيقة تقريباً)
-    // مقارنة بمحتوى حصة حقيقي (دقايق طويلة) أو بث مباشر (مدته بتفضل صفر طول ما شغال).
-    // فبنستخدم مدة الفيديو الحالية كإشارة عملية وموثوقة لمعرفة "ده لسه إعلان؟" من غير ما نعتمد على
-    // أي بروتوكول غير موثق ممكن يتغير أو ميشتغلش من الأساس.
-    const AD_LIKE_MAX_DURATION = 90;
-    function isLikelyAdPlaying() {
-        if (currentMode !== 'youtube') return false;
-        if (!playerIsPlaying()) return false;
-        const duration = playerGetDuration();
-        return isFiniteNumber(duration) && duration > 0 && duration < AD_LIKE_MAX_DURATION;
+        const el = document.getElementById('live-waiting-overlay');
+        if (el) el.classList.toggle('show', show);
+        const bar = document.getElementById('video-control-bar');
+        if (bar) bar.classList.toggle('hide', show);
     }
 
     function checkLiveStarted() {
-        if (playerIsPlaying() && !isLikelyAdPlaying()) {
+        if (playerIsPlaying()) {
             showLiveWaitingOverlay(false);
             if (liveWatchTimer) { clearInterval(liveWatchTimer); liveWatchTimer = null; }
             return;
@@ -375,36 +318,9 @@
     }
 
     function watchForLiveStart() {
-        showLiveWaitingOverlay(true);
         if (liveWatchTimer) clearInterval(liveWatchTimer);
-        setTimeout(checkLiveStarted, 1500);
-        liveWatchTimer = setInterval(checkLiveStarted, 1000);
-    }
-
-    // نفس الفكرة لكن لفيديوهات الحصص العادية (مش بث مباشر): بنغطي بداية التشغيل بشاشة "يرجى الانتظار"
-    // وصوت مقفول، لحد ما نتأكد إن اللي شغال هو الحصة الحقيقية مش إعلان قبلها.
-    let videoRealStartTimer = null;
-    let videoWaitStartedAt = 0;
-    const VIDEO_WAIT_SAFETY_MS = 15000; // حماية: لو الانتظار طال أكتر من كده من غير تأكيد، بنعرض الفيديو على أي حال
-
-    function checkVideoRealStart() {
-        if (playerIsPlaying() && !isLikelyAdPlaying()) {
-            hideWaitOverlay();
-            if (videoRealStartTimer) { clearInterval(videoRealStartTimer); videoRealStartTimer = null; }
-            return;
-        }
-        if (Date.now() - videoWaitStartedAt > VIDEO_WAIT_SAFETY_MS) {
-            hideWaitOverlay();
-            if (videoRealStartTimer) { clearInterval(videoRealStartTimer); videoRealStartTimer = null; }
-        }
-    }
-
-    function watchForVideoRealStart() {
-        videoWaitStartedAt = Date.now();
-        showWaitOverlay('يرجى الانتظار', 'جاري تجهيز الحصة...');
-        if (videoRealStartTimer) clearInterval(videoRealStartTimer);
-        setTimeout(checkVideoRealStart, 400);
-        videoRealStartTimer = setInterval(checkVideoRealStart, 400);
+        setTimeout(checkLiveStarted, 6000);
+        liveWatchTimer = setInterval(checkLiveStarted, 5000);
     }
 
     function initYouTubePlayer(videoId) {
@@ -420,12 +336,10 @@
                 height: '100%',
                 playerVars: {
                     autoplay: 1, rel: 0, modestbranding: 1, controls: 0,
-                    fs: 0, playsinline: 1, enablejsapi: 1, disablekb: 1, cc_load_policy: 0,
-                    origin: window.location.origin
+                    fs: 0, playsinline: 1, enablejsapi: 1, disablekb: 1, cc_load_policy: 0
                 },
                 events: {
                     onReady: (e) => {
-                        try { e.target.mute(); } catch (err) {}
                         e.target.playVideo();
                         syncPlayState();
                         captionsEnabled = false;
@@ -439,85 +353,6 @@
             });
         });
     }
-
-    // ===== كشف وحجب إعلانات يوتيوب =====
-    // ملحوظة مهمة وأمانة: مفيش أي طريقة رسمية من يوتيوب لمشغل الـ iframe تدّي معلومة "دلوقتي في إعلان" أو زرار "skip" API،
-    // ولإن الـ iframe من دومين مختلف (youtube.com) فمتصفح المستخدم بيمنع أي كود عندنا إنه يوصل لعناصر جوه الـ iframe
-    // (Same-Origin Policy) وبالتالي "الضغط التلقائي" على زرار التخطي مش ممكن تقنيًا من هنا.
-    // اللي ممكن نعمله فعليًا: نراقب رسائل postMessage اللي بيبعتها مشغل يوتيوب (بروتوكول غير موثّق رسميًا لكنه معروف ومجرب)
-    // ونستخدمها كإشارة "فيه إعلان شغال دلوقتي"، وبمجرد ما نمسكها (عادة في أقل من ثانية) بنكتم الصوت فورًا،
-    // ونخفي طبقة الكليك بتاعتنا اللي كانت بتمنع وصول ضغطة المستخدم لزرار التخطي الحقيقي جوه المشغل.
-    let adOverlayActive = false;
-    let wasMutedBeforeAd = false;
-    let lastAdSignalAt = 0;
-    let adWatchdogTimer = null;
-    const AD_SIGNAL_GAP_MS = 1200; // لو معدّت من غير أي إشارة إعلان جديدة، معناها الإعلان خلص
-
-    function showAdOverlay() {
-        if (adOverlayActive) return;
-        adOverlayActive = true;
-        try { wasMutedBeforeAd = !!(ytPlayer && ytPlayer.isMuted && ytPlayer.isMuted()); } catch (e) {}
-        try { if (ytPlayer && ytPlayer.mute) ytPlayer.mute(); } catch (e) {}
-        const overlay = document.getElementById('ad-block-overlay');
-        if (overlay) overlay.classList.add('show');
-        const bar = document.getElementById('video-control-bar');
-        if (bar) bar.classList.add('hide');
-        const clickArea = document.getElementById('video-click-area');
-        // بنشيل طبقة الكليك بتاعتنا من فوق الإعلان عشان ضغطة المستخدم توصل مباشرة لزرار "تخطي الإعلان" الحقيقي
-        if (clickArea) clickArea.style.pointerEvents = 'none';
-        const muteBtn = document.getElementById('btn-mute-toggle');
-        if (muteBtn) muteBtn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
-    }
-
-    function hideAdOverlay() {
-        if (!adOverlayActive) return;
-        adOverlayActive = false;
-        try { if (ytPlayer && ytPlayer.unMute && !wasMutedBeforeAd) ytPlayer.unMute(); } catch (e) {}
-        const overlay = document.getElementById('ad-block-overlay');
-        if (overlay) overlay.classList.remove('show');
-        const clickArea = document.getElementById('video-click-area');
-        if (clickArea) clickArea.style.pointerEvents = '';
-        const muteBtn = document.getElementById('btn-mute-toggle');
-        if (muteBtn) muteBtn.innerHTML = wasMutedBeforeAd ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
-        resetControlsTimer();
-    }
-
-    function registerAdSignal() {
-        lastAdSignalAt = Date.now();
-        showAdOverlay();
-    }
-
-    function resetAdState() {
-        adOverlayActive = false;
-        lastAdSignalAt = 0;
-        const overlay = document.getElementById('ad-block-overlay');
-        if (overlay) overlay.classList.remove('show');
-        const clickArea = document.getElementById('video-click-area');
-        if (clickArea) clickArea.style.pointerEvents = '';
-    }
-
-    function handleYouTubePostMessage(event) {
-        if (currentMode !== 'youtube') return;
-        if (!event.origin || event.origin.indexOf('youtube.com') === -1) return;
-        let data = event.data;
-        if (typeof data === 'string') {
-            try { data = JSON.parse(data); } catch (e) { return; }
-        }
-        if (!data || data.event !== 'infoDelivery' || !data.info) return;
-        const info = data.info;
-        const hasAdSignal = (('adState' in info) && info.adState !== -1)
-            || (typeof info.currentTimeAd === 'number')
-            || (info.videoData && info.videoData.isAd === true);
-        if (hasAdSignal) registerAdSignal();
-    }
-    window.addEventListener('message', handleYouTubePostMessage);
-
-    if (!adWatchdogTimer) {
-        adWatchdogTimer = setInterval(() => {
-            if (adOverlayActive && (Date.now() - lastAdSignalAt > AD_SIGNAL_GAP_MS)) hideAdOverlay();
-        }, 300);
-    }
-    // ===== نهاية كود كشف وحجب الإعلانات =====
 
     function initNativeVideo(url) {
         document.getElementById('yt-player-target').classList.add('hidden');
@@ -749,7 +584,6 @@
         muteBtn.onclick = () => {
             onActivity();
             const muted = playerMuteToggle();
-            userMutePreference = muted;
             muteBtn.innerHTML = muted ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
         };
         fsBtn.onclick = () => { onActivity(); toggleVideoStageFullscreen(); };
