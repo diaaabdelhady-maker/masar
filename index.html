@@ -1,4 +1,4 @@
-﻿<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -179,6 +179,16 @@
             padding: 0.65rem 0.9rem;
             border-radius: 0.9rem;
             transition: all 0.2s ease;
+        }
+
+        #exam-violation-toast {
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            transform: translate(-50%, 8px);
+        }
+        #exam-violation-toast.show {
+            opacity: 1;
+            transform: translate(-50%, 0);
         }
     </style>
     <script>
@@ -502,6 +512,14 @@
 
         <!-- 2.C EXAM TAKING VIEW - صفحة أداء الامتحان (سؤال في كل صفحة) -->
         <section id="view-exam-taking" class="page-view py-4 md:py-8 max-w-6xl mx-auto px-4">
+
+            <!-- تنبيه تسجيل مخالفة أثناء الامتحان -->
+            <div id="exam-violation-toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-[80] hidden items-center gap-3 bg-amber-500 text-white font-bold px-5 py-3.5 rounded-2xl shadow-2xl max-w-[92vw] text-center">
+                <div>
+                    <p class="text-sm"><i class="fa-solid fa-triangle-exclamation ml-1.5"></i> تم تسجيل مخالفة أثناء الامتحان</p>
+                    <p class="text-[11px] font-normal opacity-90 mt-0.5">لو معتقدش إنك غششت، متقلقش - ممكن تكون غلطة من الكمبيوتر، والمعلم هو اللي هيراجعها</p>
+                </div>
+            </div>
 
             <!-- شريط علوي مبسط خاص بالامتحان فقط (بديل الهيدر الرئيسي المخفي) -->
             <div class="flex items-center justify-between mb-4 gap-3">
@@ -2001,6 +2019,8 @@
                             <th class="p-3">اسم الطالب</th>
                             <th class="p-3">الدرجة</th>
                             <th class="p-3">النتيجة</th>
+                            <th class="p-3">تبديل التاب</th>
+                            <th class="p-3">مخالفات المراقبة</th>
                             <th class="p-3">تاريخ التسليم</th>
                         </tr>
                     </thead>
@@ -2684,9 +2704,18 @@
             }
         }
 
-        // لما المستخدم يدوس رجوع (زرار المتصفح / زرار الباك في الموبايل / أزرار الماوس الجانبية)
+        // لما المستخدم يدوس رجوع (زرار المتصفح / زرار الباك في الموبايل / أزرار الماوس الجانبية / لمسة الرجوع)
         // بنتنقل جوه المنصة نفسها لآخر صفحة كانت متفتحة، بدل ما نخرج من المنصة كلها بالغلط.
+        // استثناء واحد: لو الطالب في نص أداء امتحان فعلي (مش في صفحة مراجعة النتيجة)
+        // مش بنسيبه يرجع للخلف عادي، لأن ده هيكسر قفل "دخول واحد بس للامتحان".
+        // بنلغي أثر الرجوع فوراً ونعرضله نفس تأكيد الخروج اليدوي من الامتحان.
         window.addEventListener('popstate', (event) => {
+            const isMidExam = currentExamSession && currentExamSession.exam && !currentExamSession.submission;
+            if (isMidExam) {
+                window.history.pushState({ masarView: 'exam-taking' }, '', '#exam-taking');
+                confirmExitExamManually();
+                return;
+            }
             const targetId = (event.state && event.state.masarView) || 'home';
             navigateTo(targetId, true);
         });
@@ -7339,11 +7368,26 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
                 const resultBadge = s.passed
                     ? `<span class="text-emerald-600 font-bold"><i class="fa-solid fa-circle-check"></i> ناجح</span>`
                     : `<span class="text-rose-500 font-bold"><i class="fa-solid fa-circle-xmark"></i> راسب</span>`;
+                const switchCount = s.tabSwitchCount || 0;
+                const switchBadge = switchCount > 0
+                    ? `<span title="عدد مرات خروج الطالب من تاب الامتحان أثناء الأداء" class="inline-flex items-center gap-1 text-amber-600 bg-amber-100 dark:bg-amber-500/10 dark:text-amber-400 font-bold px-2 py-1 rounded-lg text-xs"><i class="fa-solid fa-triangle-exclamation"></i> ${switchCount} مرة</span>`
+                    : `<span class="text-slate-300 dark:text-slate-600 text-xs">-</span>`;
+                const violations = s.violations || [];
+                const violationsCount = s.violationsCount != null ? s.violationsCount : violations.length;
+                const violationTypeLabels = { tab_switch: 'غيّر التاب أو النافذة' };
+                const violationsTitle = violations.length
+                    ? violations.map(v => `${violationTypeLabels[v.type] || v.type} (${formatExamTime(v.atSeconds || 0)})`).join(' | ')
+                    : '';
+                const violationsBadge = violationsCount > 0
+                    ? `<span title="${violationsTitle}" class="inline-flex items-center gap-1 text-rose-600 bg-rose-100 dark:bg-rose-500/10 dark:text-rose-400 font-bold px-2 py-1 rounded-lg text-xs cursor-help"><i class="fa-solid fa-triangle-exclamation"></i> ${violationsCount} مخالفة</span>`
+                    : `<span class="text-slate-300 dark:text-slate-600 text-xs">-</span>`;
                 table.innerHTML += `
                     <tr class="border-b border-slate-100 dark:border-slate-700">
                         <td class="p-3 font-bold">${s.studentName || s.studentEmail}</td>
                         <td class="p-3">${s.score}%</td>
                         <td class="p-3">${resultBadge}</td>
+                        <td class="p-3">${switchBadge}</td>
+                        <td class="p-3">${violationsBadge}</td>
                         <td class="p-3 text-xs text-slate-400">${dateLabel}</td>
                     </tr>
                 `;
@@ -7385,13 +7429,16 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
                 currentIndex: 0,
                 remainingSeconds: exam.duration * 60,
                 totalSeconds: exam.duration * 60,
-                timerInterval: null
+                timerInterval: null,
+                tabSwitchCount: 0,
+                violations: []
             };
 
             // نسجل إن الطالب بدأ الامتحان فوراً، عشان لو خرج من غير تسليم يتقفل عليه
             await recordExamAttemptStarted(courseId, examId);
 
             enableExamExitGuard();
+            enableExamVisibilityTracking();
             renderExamTakingQuestion();
             startExamCountdownTimer();
             navigateTo('exam-taking');
@@ -7415,6 +7462,75 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
             window.removeEventListener('beforeunload', examBeforeUnloadHandler);
         }
 
+        // ============================================================
+        // تتبّع تبديل التابات أثناء الامتحان (رصد فقط، بدون منع)
+        // بيستخدم Page Visibility API عشان يسجل "تنبيه اشتباه" لو الطالب
+        // فتح تاب/تطبيق تاني وقت أدائه للامتحان، ويظهر ده للمعلم بعدين
+        // في تقرير تسليمات الامتحان.
+        // ============================================================
+        function examVisibilityChangeHandler() {
+            if (!currentExamSession || !currentExamSession.exam) return;
+            if (document.visibilityState === 'hidden') {
+                currentExamSession.tabSwitchCount = (currentExamSession.tabSwitchCount || 0) + 1;
+                logExamViolation('tab_switch', 'الطالب غيّر التاب أو غادر صفحة الامتحان');
+            }
+        }
+
+        // بيرصد فقدان تركيز نافذة المتصفح (فتح برنامج/نافذة تانية فوق صفحة الامتحان) حتى لو التاب فضل ظاهر
+        function examWindowBlurHandler() {
+            if (!currentExamSession || !currentExamSession.exam) return;
+            if (document.visibilityState === 'visible') {
+                logExamViolation('tab_switch', 'الطالب غيّر النافذة أثناء الامتحان');
+            }
+        }
+
+        function enableExamVisibilityTracking() {
+            document.addEventListener('visibilitychange', examVisibilityChangeHandler);
+            window.addEventListener('blur', examWindowBlurHandler);
+        }
+
+        function disableExamVisibilityTracking() {
+            document.removeEventListener('visibilitychange', examVisibilityChangeHandler);
+            window.removeEventListener('blur', examWindowBlurHandler);
+        }
+
+        // ============================================================
+        // مراقبة الامتحان: رصد تبديل التابات/تغيير النافذة فقط (بدون كاميرا)
+        // بيسجل "مخالفة" لو الطالب فتح تاب/برنامج تاني وقت أدائه للامتحان،
+        // ويظهر ده للمعلم بعدين في تقرير تسليمات الامتحان.
+        // ============================================================
+        let examViolationToastTimeout = null;
+        let examProctorLastViolationAt = {};
+        const EXAM_VIOLATION_COOLDOWN_MS = 20000; // متسجلش نفس نوع المخالفة تاني إلا بعد 20 ثانية عشان منزعجش الطالب
+
+        // بيسجل مخالفة في جلسة الامتحان الحالية (تُحفظ مع التسليم عشان المعلم يراجعها) + يظهر تنبيه بسيط للطالب بدون إيقاف الامتحان
+        function logExamViolation(type, message) {
+            if (!currentExamSession) return;
+            const now = Date.now();
+            const last = examProctorLastViolationAt[type] || 0;
+            if (now - last < EXAM_VIOLATION_COOLDOWN_MS) return;
+            examProctorLastViolationAt[type] = now;
+
+            if (!currentExamSession.violations) currentExamSession.violations = [];
+            const atSeconds = (currentExamSession.totalSeconds || 0) - (currentExamSession.remainingSeconds || 0);
+            currentExamSession.violations.push({ type, message, atSeconds, time: new Date().toISOString() });
+
+            showExamViolationToast();
+        }
+
+        function showExamViolationToast() {
+            const toast = document.getElementById('exam-violation-toast');
+            if (!toast) return;
+            toast.classList.remove('hidden');
+            toast.classList.add('flex');
+            requestAnimationFrame(() => toast.classList.add('show'));
+            if (examViolationToastTimeout) clearTimeout(examViolationToastTimeout);
+            examViolationToastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => { toast.classList.add('hidden'); toast.classList.remove('flex'); }, 300);
+            }, 4500);
+        }
+
         // زرار الخروج اليدوي من صفحة الامتحان (لأن شريط التنقل مخفي أثناء الامتحان)
         function confirmExitExamManually() {
             if (!currentExamSession || !currentExamSession.exam) return;
@@ -7426,6 +7542,7 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
                     const courseId = currentExamSession.courseId;
                     stopExamCountdownTimer();
                     disableExamExitGuard();
+                    disableExamVisibilityTracking();
                     currentExamSession = null;
                     navigateTo('course-details');
                     if (courseId) { openCourseDetails(courseId); switchCourseDetailsTab('exams'); }
@@ -7739,8 +7856,9 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
             if (!currentExamSession) return;
             stopExamCountdownTimer();
             disableExamExitGuard();
+            disableExamVisibilityTracking();
 
-            const { exam, answers, courseId, examId, courseTitle, totalSeconds, remainingSeconds } = currentExamSession;
+            const { exam, answers, courseId, examId, courseTitle, totalSeconds, remainingSeconds, tabSwitchCount, violations } = currentExamSession;
             let correctCount = 0;
             exam.questions.forEach((q, idx) => {
                 if (answers[idx] === q.correctIndex) correctCount++;
@@ -7766,6 +7884,9 @@ async function rejectTeacherPlanRequest(reqId, teacherEmail) {
                 timeTakenSeconds,
                 passed,
                 autoSubmitted: !!autoSubmitted,
+                tabSwitchCount: tabSwitchCount || 0,
+                violations: violations || [],
+                violationsCount: (violations || []).length,
                 submittedAt: new Date().toISOString()
             };
 
