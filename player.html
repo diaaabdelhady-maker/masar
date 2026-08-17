@@ -84,7 +84,7 @@
     #video-control-bar .cb-progress-group { direction: ltr; }
     #progress-slider { direction: ltr; }
 
-    #live-waiting-overlay { position: absolute; inset: 0; z-index: 25; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: rgba(2,6,23,.88); text-align: center; padding: 24px; }
+    #live-waiting-overlay { position: absolute; inset: 0; z-index: 25; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: rgba(2,6,23,.88); text-align: center; padding: 24px; pointer-events: none; }
     #live-waiting-overlay.show { display: flex; }
     .live-spinner { width: 46px; height: 46px; border-radius: 9999px; border: 4px solid rgba(79,70,229,.25); border-top-color: #4F46E5; animation: liveSpin 1s linear infinite; }
     @keyframes liveSpin { to { transform: rotate(360deg); } }
@@ -155,8 +155,8 @@
 
         <div id="live-waiting-overlay">
             <div class="live-spinner"></div>
-            <p class="text-base font-black text-white">البث لم يبدأ بعد، يرجى الانتظار</p>
-            <p class="text-xs text-slate-400">هنوصلك بالبث تلقائياً أول ما يبدأ المعلم</p>
+            <p id="wait-overlay-title" class="text-base font-black text-white">البث لم يبدأ بعد، يرجى الانتظار</p>
+            <p id="wait-overlay-subtitle" class="text-xs text-slate-400">هنوصلك بالبث تلقائياً أول ما يبدأ المعلم</p>
         </div>
 
         <div id="ad-block-overlay">
@@ -298,6 +298,9 @@
         document.getElementById('fs-lesson-title').textContent = payload.lessonTitle || 'عرض الحصة';
         currentLessonType = payload.lessonType === 'live' ? 'live' : 'video';
         if (typeof resetAdState === 'function') resetAdState();
+        if (videoRealStartTimer) { clearInterval(videoRealStartTimer); videoRealStartTimer = null; }
+        if (liveWatchTimer) { clearInterval(liveWatchTimer); liveWatchTimer = null; }
+        hideWaitOverlay();
 
         const videoId = extractYouTubeId(payload.lessonUrl);
         if (videoId) {
@@ -316,19 +319,54 @@
 
         if (currentLessonType === 'live') {
             watchForLiveStart();
+        } else if (currentMode === 'youtube') {
+            watchForVideoRealStart();
         }
     }
 
     // بيتابع لو البث المباشر لسه ما بداش فعلياً، وبيوري "البث لم يبدأ بعد" بدل ما الطالب يشوف شاشة فاضية أو خطأ
-    function showLiveWaitingOverlay(show) {
+    // ونفس الأوفرلاي ده بقى بيتستخدم كمان في بداية أي فيديو عادي (مش بس البث) عشان يغطي أي إعلان بيتشغل قبل الحصة،
+    // وبيقفل صوت المشغل طول ما الأوفرلاي ظاهر، وبيفتحه تاني أول ما نتأكد إن المحتوى الحقيقي هو اللي شغال.
+    let userMutePreference = false;
+
+    function showWaitOverlay(title, subtitle) {
         const el = document.getElementById('live-waiting-overlay');
-        if (el) el.classList.toggle('show', show);
+        if (el) el.classList.add('show');
+        const t = document.getElementById('wait-overlay-title');
+        const s = document.getElementById('wait-overlay-subtitle');
+        if (t && title) t.textContent = title;
+        if (s && subtitle) s.textContent = subtitle;
         const bar = document.getElementById('video-control-bar');
-        if (bar) bar.classList.toggle('hide', show);
+        if (bar) bar.classList.add('hide');
+        try { if (ytPlayer && ytPlayer.mute) ytPlayer.mute(); } catch (e) {}
+    }
+
+    function hideWaitOverlay() {
+        const el = document.getElementById('live-waiting-overlay');
+        if (el) el.classList.remove('show');
+        try { if (ytPlayer && ytPlayer.unMute && !userMutePreference) ytPlayer.unMute(); } catch (e) {}
+        resetControlsTimer();
+    }
+
+    function showLiveWaitingOverlay(show) {
+        if (show) showWaitOverlay('البث لم يبدأ بعد، يرجى الانتظار', 'هنوصلك بالبث تلقائياً أول ما يبدأ المعلم');
+        else hideWaitOverlay();
+    }
+
+    // إعلانات يوتيوب (السابقة للفيديو أو للبث) بتكون في الغالب قصيرة جداً (ثواني لدقيقة تقريباً)
+    // مقارنة بمحتوى حصة حقيقي (دقايق طويلة) أو بث مباشر (مدته بتفضل صفر طول ما شغال).
+    // فبنستخدم مدة الفيديو الحالية كإشارة عملية وموثوقة لمعرفة "ده لسه إعلان؟" من غير ما نعتمد على
+    // أي بروتوكول غير موثق ممكن يتغير أو ميشتغلش من الأساس.
+    const AD_LIKE_MAX_DURATION = 90;
+    function isLikelyAdPlaying() {
+        if (currentMode !== 'youtube') return false;
+        if (!playerIsPlaying()) return false;
+        const duration = playerGetDuration();
+        return isFiniteNumber(duration) && duration > 0 && duration < AD_LIKE_MAX_DURATION;
     }
 
     function checkLiveStarted() {
-        if (playerIsPlaying()) {
+        if (playerIsPlaying() && !isLikelyAdPlaying()) {
             showLiveWaitingOverlay(false);
             if (liveWatchTimer) { clearInterval(liveWatchTimer); liveWatchTimer = null; }
             return;
@@ -337,9 +375,36 @@
     }
 
     function watchForLiveStart() {
+        showLiveWaitingOverlay(true);
         if (liveWatchTimer) clearInterval(liveWatchTimer);
-        setTimeout(checkLiveStarted, 6000);
-        liveWatchTimer = setInterval(checkLiveStarted, 5000);
+        setTimeout(checkLiveStarted, 1500);
+        liveWatchTimer = setInterval(checkLiveStarted, 1000);
+    }
+
+    // نفس الفكرة لكن لفيديوهات الحصص العادية (مش بث مباشر): بنغطي بداية التشغيل بشاشة "يرجى الانتظار"
+    // وصوت مقفول، لحد ما نتأكد إن اللي شغال هو الحصة الحقيقية مش إعلان قبلها.
+    let videoRealStartTimer = null;
+    let videoWaitStartedAt = 0;
+    const VIDEO_WAIT_SAFETY_MS = 15000; // حماية: لو الانتظار طال أكتر من كده من غير تأكيد، بنعرض الفيديو على أي حال
+
+    function checkVideoRealStart() {
+        if (playerIsPlaying() && !isLikelyAdPlaying()) {
+            hideWaitOverlay();
+            if (videoRealStartTimer) { clearInterval(videoRealStartTimer); videoRealStartTimer = null; }
+            return;
+        }
+        if (Date.now() - videoWaitStartedAt > VIDEO_WAIT_SAFETY_MS) {
+            hideWaitOverlay();
+            if (videoRealStartTimer) { clearInterval(videoRealStartTimer); videoRealStartTimer = null; }
+        }
+    }
+
+    function watchForVideoRealStart() {
+        videoWaitStartedAt = Date.now();
+        showWaitOverlay('يرجى الانتظار', 'جاري تجهيز الحصة...');
+        if (videoRealStartTimer) clearInterval(videoRealStartTimer);
+        setTimeout(checkVideoRealStart, 400);
+        videoRealStartTimer = setInterval(checkVideoRealStart, 400);
     }
 
     function initYouTubePlayer(videoId) {
@@ -360,6 +425,7 @@
                 },
                 events: {
                     onReady: (e) => {
+                        try { e.target.mute(); } catch (err) {}
                         e.target.playVideo();
                         syncPlayState();
                         captionsEnabled = false;
@@ -683,6 +749,7 @@
         muteBtn.onclick = () => {
             onActivity();
             const muted = playerMuteToggle();
+            userMutePreference = muted;
             muteBtn.innerHTML = muted ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
         };
         fsBtn.onclick = () => { onActivity(); toggleVideoStageFullscreen(); };
