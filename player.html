@@ -24,8 +24,8 @@
 
     #video-loading-line { position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, transparent, #22d3ee, transparent); transform: translateX(-100%); opacity: 0; z-index: 10; transition: opacity .2s; }
 
-    #custom-action-badge { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(.9); z-index: 20; opacity: 0; pointer-events: none; transition: all .2s; background: rgba(15,23,42,.9); border: 1px solid rgba(34,211,238,.4); color: #fff; padding: .6rem 1.3rem; border-radius: 9999px; font-weight: 700; }
-    #custom-action-badge.show { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+    #custom-action-badge { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(.85); z-index: 20; opacity: 0; pointer-events: none; transition: opacity .25s ease, transform .3s cubic-bezier(0.34, 1.56, 0.64, 1); background: rgba(15,23,42,.9); border: 1px solid rgba(34,211,238,.4); color: #fff; padding: .6rem 1.3rem; border-radius: 9999px; font-weight: 700; }
+    #custom-action-badge.show { opacity: 1; transform: translate(-50%,-50%) scale(1); transition: opacity .15s ease, transform .3s cubic-bezier(0.34, 1.56, 0.64, 1); }
 
     #custom-center-play { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 20; width: 64px; height: 64px; border-radius: 9999px; background: rgba(15,23,42,.9); border: 2px solid #4F46E5; color: #4F46E5; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; transition: all .3s; font-size: 1.5rem; }
     #custom-center-play.show { opacity: 1; }
@@ -50,10 +50,26 @@
 
     #masar-logo-watermark {
         position: absolute; bottom: 16px; left: 12px; z-index: 12; pointer-events: none; user-select: none;
-        font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 24px; letter-spacing: -0.5px; 
+        font-family: 'Poppins', sans-serif; font-weight: 800; font-size: clamp(12px, 2vw, 24px); letter-spacing: -0.5px;
         color: rgba(255,255,255,.5); text-transform: lowercase; direction: ltr;
     }
     #masar-logo-watermark .dot { color: #4F46E5; margin-right: 2px; }
+
+    @media (max-width: 768px) {
+        #masar-logo-watermark {
+            bottom: 12px;
+            left: 10px;
+            font-size: clamp(10px, 3vw, 18px);
+        }
+    }
+
+    @media (max-width: 480px) {
+        #masar-logo-watermark {
+            bottom: 10px;
+            left: 8px;
+            font-size: clamp(9px, 4vw, 14px);
+        }
+    }
 
     #qaid-watermark {
         position: fixed; z-index: 999999; pointer-events: none; user-select: none;
@@ -72,6 +88,18 @@
     #live-waiting-overlay.show { display: flex; }
     .live-spinner { width: 46px; height: 46px; border-radius: 9999px; border: 4px solid rgba(79,70,229,.25); border-top-color: #4F46E5; animation: liveSpin 1s linear infinite; }
     @keyframes liveSpin { to { transform: rotate(360deg); } }
+
+    /* أوفرلاي الإعلانات: بيظهر فوق الفيديو وبيكتم الصوت أول ما نكتشف إعلان، وبيختفي فورًا لما الإعلان يخلص */
+    #ad-block-overlay {
+        position: absolute; inset: 0; z-index: 40; display: none; flex-direction: column;
+        align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 24px;
+        background: rgba(2,6,23,.94); animation: adFadeIn .25s ease both;
+        /* pointer-events: none عن قصد -> عشان ضغطة المستخدم توصل مباشرة لزرار "تخطي الإعلان" الحقيقي بتاع يوتيوب اللي بيتعرض تحت الأوفرلاي ده */
+        pointer-events: none;
+    }
+    #ad-block-overlay.show { display: flex; }
+    @keyframes adFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    #ad-block-overlay .ad-icon { width: 46px; height: 46px; border-radius: 9999px; background: rgba(79,70,229,.15); border: 1px solid rgba(79,70,229,.4); display: flex; align-items: center; justify-content: center; color: #818cf8; font-size: 1.1rem; }
 </style>
 </head>
 <body class="text-white">
@@ -131,6 +159,12 @@
             <p class="text-xs text-slate-400">هنوصلك بالبث تلقائياً أول ما يبدأ المعلم</p>
         </div>
 
+        <div id="ad-block-overlay">
+            <div class="ad-icon"><i class="fa-solid fa-volume-xmark"></i></div>
+            <p class="text-sm font-black text-white">تم كتم صوت الإعلان تلقائيًا</p>
+            <p class="text-xs text-slate-400 max-w-[230px] leading-6">اضغط في أي مكان بمجرد ظهور زرار "تخطي الإعلان" أسفل الشاشة عشان ترجع للحصة فورًا</p>
+        </div>
+
         <div id="video-control-bar">
             <div class="flex items-center gap-2 shrink-0">
                 <button id="btn-back10" type="button" class="ctrl-btn"><i class="fa-solid fa-rotate-left"></i></button>
@@ -154,12 +188,17 @@
                         <button class="speed-btn" data-speed="2">2×</button>
                     </div>
                     <span class="text-[11px] font-extrabold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5 mb-2"><i class="fa-solid fa-sliders"></i> الجودة</span>
-                    <div class="grid grid-cols-5 gap-1">
+                    <div class="grid grid-cols-5 gap-1 mb-3">
                         <button class="quality-btn active" data-quality="auto">تلقائي</button>
                         <button class="quality-btn" data-quality="hd1080">1080</button>
                         <button class="quality-btn" data-quality="hd720">720</button>
                         <button class="quality-btn" data-quality="large">480</button>
                         <button class="quality-btn" data-quality="medium">360</button>
+                    </div>
+                    <span class="text-[11px] font-extrabold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5 mb-2"><i class="fa-solid fa-closed-captioning"></i> الترجمة</span>
+                    <div class="grid grid-cols-2 gap-1">
+                        <button id="captions-off-btn" class="quality-btn active" data-captions="off">إيقاف</button>
+                        <button id="captions-on-btn" class="quality-btn" data-captions="on">تشغيل</button>
                     </div>
                 </div>
                 <button id="btn-mute-toggle" type="button" class="ctrl-btn"><i class="fa-solid fa-volume-high"></i></button>
@@ -181,6 +220,7 @@
     let centerIconHideTimeout = null;
     let clickTimeout = null;
     let currentSpeed = 1;
+    let captionsEnabled = false;
     let currentMode = null;
     let currentLessonType = 'video';
     let liveWatchTimer = null;
@@ -257,6 +297,7 @@
         stage.classList.remove('hidden');
         document.getElementById('fs-lesson-title').textContent = payload.lessonTitle || 'عرض الحصة';
         currentLessonType = payload.lessonType === 'live' ? 'live' : 'video';
+        if (typeof resetAdState === 'function') resetAdState();
 
         const videoId = extractYouTubeId(payload.lessonUrl);
         if (videoId) {
@@ -314,12 +355,15 @@
                 height: '100%',
                 playerVars: {
                     autoplay: 1, rel: 0, modestbranding: 1, controls: 0,
-                    fs: 0, playsinline: 1, enablejsapi: 1, disablekb: 1
+                    fs: 0, playsinline: 1, enablejsapi: 1, disablekb: 1, cc_load_policy: 0,
+                    origin: window.location.origin
                 },
                 events: {
                     onReady: (e) => {
                         e.target.playVideo();
                         syncPlayState();
+                        captionsEnabled = false;
+                        try { e.target.unloadModule('captions'); } catch (err) {}
                         if (ytTimer) clearInterval(ytTimer);
                         ytTimer = setInterval(syncProgress, 500);
                         resetControlsTimer();
@@ -329,6 +373,85 @@
             });
         });
     }
+
+    // ===== كشف وحجب إعلانات يوتيوب =====
+    // ملحوظة مهمة وأمانة: مفيش أي طريقة رسمية من يوتيوب لمشغل الـ iframe تدّي معلومة "دلوقتي في إعلان" أو زرار "skip" API،
+    // ولإن الـ iframe من دومين مختلف (youtube.com) فمتصفح المستخدم بيمنع أي كود عندنا إنه يوصل لعناصر جوه الـ iframe
+    // (Same-Origin Policy) وبالتالي "الضغط التلقائي" على زرار التخطي مش ممكن تقنيًا من هنا.
+    // اللي ممكن نعمله فعليًا: نراقب رسائل postMessage اللي بيبعتها مشغل يوتيوب (بروتوكول غير موثّق رسميًا لكنه معروف ومجرب)
+    // ونستخدمها كإشارة "فيه إعلان شغال دلوقتي"، وبمجرد ما نمسكها (عادة في أقل من ثانية) بنكتم الصوت فورًا،
+    // ونخفي طبقة الكليك بتاعتنا اللي كانت بتمنع وصول ضغطة المستخدم لزرار التخطي الحقيقي جوه المشغل.
+    let adOverlayActive = false;
+    let wasMutedBeforeAd = false;
+    let lastAdSignalAt = 0;
+    let adWatchdogTimer = null;
+    const AD_SIGNAL_GAP_MS = 1200; // لو معدّت من غير أي إشارة إعلان جديدة، معناها الإعلان خلص
+
+    function showAdOverlay() {
+        if (adOverlayActive) return;
+        adOverlayActive = true;
+        try { wasMutedBeforeAd = !!(ytPlayer && ytPlayer.isMuted && ytPlayer.isMuted()); } catch (e) {}
+        try { if (ytPlayer && ytPlayer.mute) ytPlayer.mute(); } catch (e) {}
+        const overlay = document.getElementById('ad-block-overlay');
+        if (overlay) overlay.classList.add('show');
+        const bar = document.getElementById('video-control-bar');
+        if (bar) bar.classList.add('hide');
+        const clickArea = document.getElementById('video-click-area');
+        // بنشيل طبقة الكليك بتاعتنا من فوق الإعلان عشان ضغطة المستخدم توصل مباشرة لزرار "تخطي الإعلان" الحقيقي
+        if (clickArea) clickArea.style.pointerEvents = 'none';
+        const muteBtn = document.getElementById('btn-mute-toggle');
+        if (muteBtn) muteBtn.innerHTML = '<i class="fa-solid fa-volume-xmark"></i>';
+    }
+
+    function hideAdOverlay() {
+        if (!adOverlayActive) return;
+        adOverlayActive = false;
+        try { if (ytPlayer && ytPlayer.unMute && !wasMutedBeforeAd) ytPlayer.unMute(); } catch (e) {}
+        const overlay = document.getElementById('ad-block-overlay');
+        if (overlay) overlay.classList.remove('show');
+        const clickArea = document.getElementById('video-click-area');
+        if (clickArea) clickArea.style.pointerEvents = '';
+        const muteBtn = document.getElementById('btn-mute-toggle');
+        if (muteBtn) muteBtn.innerHTML = wasMutedBeforeAd ? '<i class="fa-solid fa-volume-xmark"></i>' : '<i class="fa-solid fa-volume-high"></i>';
+        resetControlsTimer();
+    }
+
+    function registerAdSignal() {
+        lastAdSignalAt = Date.now();
+        showAdOverlay();
+    }
+
+    function resetAdState() {
+        adOverlayActive = false;
+        lastAdSignalAt = 0;
+        const overlay = document.getElementById('ad-block-overlay');
+        if (overlay) overlay.classList.remove('show');
+        const clickArea = document.getElementById('video-click-area');
+        if (clickArea) clickArea.style.pointerEvents = '';
+    }
+
+    function handleYouTubePostMessage(event) {
+        if (currentMode !== 'youtube') return;
+        if (!event.origin || event.origin.indexOf('youtube.com') === -1) return;
+        let data = event.data;
+        if (typeof data === 'string') {
+            try { data = JSON.parse(data); } catch (e) { return; }
+        }
+        if (!data || data.event !== 'infoDelivery' || !data.info) return;
+        const info = data.info;
+        const hasAdSignal = (('adState' in info) && info.adState !== -1)
+            || (typeof info.currentTimeAd === 'number')
+            || (info.videoData && info.videoData.isAd === true);
+        if (hasAdSignal) registerAdSignal();
+    }
+    window.addEventListener('message', handleYouTubePostMessage);
+
+    if (!adWatchdogTimer) {
+        adWatchdogTimer = setInterval(() => {
+            if (adOverlayActive && (Date.now() - lastAdSignalAt > AD_SIGNAL_GAP_MS)) hideAdOverlay();
+        }, 300);
+    }
+    // ===== نهاية كود كشف وحجب الإعلانات =====
 
     function initNativeVideo(url) {
         document.getElementById('yt-player-target').classList.add('hidden');
@@ -464,13 +587,26 @@
         controlsHideTimeout = setTimeout(hideControls, 4000);
     }
 
+    let badgeHideTimer = null;
     function showBadge(text) {
         const badge = document.getElementById('custom-action-badge');
         const val = document.getElementById('badge-text-val');
         if (!badge || !val) return;
         val.textContent = text;
+
+        // بنلغي أي مؤقت إخفاء سابق قبل ما نضيف/نجدد الظهور، عشان لو المستخدم
+        // ضغط تاني بسرعة (مثلاً double seek) الميقاتة القديمة متطفيش البادج
+        // فجأة فوق الظهور الجديد ده كان سبب الحركة الغير سلسة
+        if (badgeHideTimer) {
+            clearTimeout(badgeHideTimer);
+            badgeHideTimer = null;
+        }
+
         badge.classList.add('show');
-        setTimeout(() => badge.classList.remove('show'), 550);
+        badgeHideTimer = setTimeout(() => {
+            badge.classList.remove('show');
+            badgeHideTimer = null;
+        }, 650);
     }
 
     function seekRelative(sec) {
@@ -594,6 +730,39 @@
                 btn.classList.add('active');
             };
         });
+
+        const captionsOnBtn = document.getElementById('captions-on-btn');
+        const captionsOffBtn = document.getElementById('captions-off-btn');
+        if (captionsOnBtn && captionsOffBtn) {
+            captionsOnBtn.onclick = () => { onActivity(); setCaptionsEnabled(true); };
+            captionsOffBtn.onclick = () => { onActivity(); setCaptionsEnabled(false); };
+        }
+    }
+
+    // بيشغل/يوقف الترجمة (الكابشن) - يشتغل مع يوتيوب وبردو مع أي <track> على الفيديو الأصلي لو موجود
+    function setCaptionsEnabled(enable) {
+        captionsEnabled = enable;
+        const onBtn = document.getElementById('captions-on-btn');
+        const offBtn = document.getElementById('captions-off-btn');
+        if (onBtn && offBtn) {
+            onBtn.classList.toggle('active', enable);
+            offBtn.classList.toggle('active', !enable);
+        }
+        if (currentMode === 'youtube' && ytPlayer) {
+            try {
+                if (enable) {
+                    ytPlayer.loadModule('captions');
+                    ytPlayer.setOption('captions', 'track', { languageCode: 'ar' });
+                } else {
+                    ytPlayer.setOption('captions', 'track', {});
+                    ytPlayer.unloadModule('captions');
+                }
+            } catch (err) {}
+        } else if (nativeVideoEl && nativeVideoEl.textTracks) {
+            Array.from(nativeVideoEl.textTracks).forEach(track => {
+                track.mode = enable ? 'showing' : 'hidden';
+            });
+        }
     }
 
     document.addEventListener('contextmenu', (e) => e.preventDefault());
